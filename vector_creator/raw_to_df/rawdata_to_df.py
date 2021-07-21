@@ -20,18 +20,12 @@ df_cont_fields = [('ScreenInfo', 'Sampling_Collect_Time'),
                   ('ActiveAppSamplingInfo', 'ActiveAppSamplingTime')]
 
 
-def group_init_metadata(path, unique_id_old_list):
+def group_metadata(path):
     metadata_file_list = list_of_json_files(path)
     if not metadata_file_list:
         return {}
     unique_uid_set = set(map(lambda x: x.split('_')[0], metadata_file_list))
-    unique_uid_list = np.setdiff1d(list(unique_uid_set), unique_id_old_list)
-    f = open(path + 'processed_unique_id_list.txt', 'a')
-    for uid in unique_uid_list:
-        f.write(uid)
-        f.write('\n')
-    f.close()
-    return {'unique_ids' : unique_uid_list, 'file_list' : metadata_file_list}
+    return {'unique_ids' : list(unique_uid_set), 'file_list' : metadata_file_list}
 
 
 def uid_df_init_metadata(uid, path, metadata_file_list):
@@ -47,10 +41,10 @@ def uid_df_init_metadata(uid, path, metadata_file_list):
             if key == 'ImgMetaData':
                 df['IMAGE_TYPE'] = df['IMAGE_TYPE'].map(lambda x: x.split(sep='/')[1])
             init_metadata_df[df_name] = df
-    loc_info = {}
+    loc_info = [{"Latitude" :-1.0, "Longitude": -1.0, "Sampling_Collect_Time": '00:00:00'}]
     if 'LocationInfo' in raw_data.keys():
         loc_info = raw_data['LocationInfo']
-    return raw_data['SamplingConfigurations'], loc_info, init_metadata_df
+    return  loc_info, init_metadata_df
 
 
 def uid_df_cont_metadata(uid, path, json_file_list,  cont_fields):
@@ -82,8 +76,12 @@ def uid_init_metadata_to_df(raw_dict, field, ts):
     df =  pd.json_normalize(raw_dict, record_path=[field])
     # converting datetime timestamp from string to float to datetime
     if ts == 'IMAGE_DATE_TIME':
-        df[ts] = df[ts].map(lambda x: x.replace('.', ''))
+        sample = df[ts][0]
+        s = sample.split(".")
+        if len(s[0]) == 7:  # bad format
+            df[ts] = df[ts].map(lambda x: x.replace('.', ''))
     df[ts] = pd.to_numeric(df[ts])
+    df = df[df[ts] != 0.0]
     df[ts] = pd.to_datetime(df[ts], unit='s')
     return df
 

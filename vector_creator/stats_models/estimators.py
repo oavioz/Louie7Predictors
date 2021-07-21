@@ -19,6 +19,8 @@ def kurtosis(input_vector):
 
 def entropy(input_vector):
     acc = np.sum(input_vector)
+    if acc < 1.0e-03:
+        return -1.0
     prob_vec = list(map(lambda x: float(x/acc), input_vector))
     return cpy.entropy(prob_vec, base=2, axis=0)
 
@@ -26,32 +28,33 @@ def entropy(input_vector):
 '''
     :param ivi_matrix: IVI input matrix by rows for sample time 0..n-1  time frame
     :return: Irregularity score
-    #I_u = np.array([timeOffsetInterval(u, Ui, W) for Ui in Un])
 '''
 def ivi_irregularity(ivi_matrix):
     l_row, l_col = ivi_matrix.shape
     c_var = []
-    for i in range(0, l_col - 1):
+    for i in range(0, l_col):
         # get vector by column
         i_u = ivi_matrix[:,i]
         nz_count = np.count_nonzero(i_u)
         if not nz_count:
             c_var.append(float())
         else:
-            norm_mean = np.mean(i_u)/np.std(i_u) #  (1/l_col) * np.sum(i_u, axis=0) / np.sqrt(1/(l_col-1) * np.sum(np.square(i_u - mean), axis=0))
+            norm_mean = np.std(i_u)/np.mean(i_u)
             c_var.append(norm_mean)
     #return sum of scores devide by number of samples in time feame
-    return [(np.sum(np.array(c_var))/l_row)]
+    return [(np.sum(np.array(c_var))/l_col)]
 
 
 
-def hober_m(data_set):
-    huber = Huber(maxiter=100)(data_set)
+def hober_m(data_set, n):
+    huber = Huber(maxiter=n)(data_set)
     return [huber[0].item(0), huber[1].item(0)]
 
 
-def qn(dataSet):
-    return [qn_scale(dataSet)]
+def qn(data_set):
+    if len(data_set) < 3 :
+        return [-1.0]
+    return [qn_scale(data_set)]
 
 
 
@@ -91,16 +94,3 @@ def ar_model_2(train, test, lag, mse):
     pred = model_fit.predict(start, end, dynamic=False)
     me = mean_squared_error(test, pred) if mse else mean_absolute_error(test,pred)
     return np.sqrt(me)
-
-def timeOffsetInterval(u, Ui, W):
-    def timeFrameOffset(u, Uk, W1):
-        if (u >= 0 and u < Uk[0]):
-            return Uk[0]
-        elif (u > Uk[-1] and u < W1):
-            return (W1 - Uk[-1])
-        else:
-            minUpper = list(filter(lambda x: x >= u, Uk))
-            maxLower = list(filter(lambda x: x < u, Uk))
-            return min(minUpper) - max(maxLower)
-
-    return list(map(lambda x: timeFrameOffset(x, Ui, W), u))

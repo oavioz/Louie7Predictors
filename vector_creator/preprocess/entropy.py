@@ -17,10 +17,10 @@ def entropy_of_freq_by_cat(df, freq_col, cat_col, cat):
 
 
 def entropy_of_cat(df, cat_col, categories):
-    def count_occurrence_by_cat(df, c_col, cats):
+    def count_occurrence_by_cat(df0, c_col, cats):
         occurr = []
         for cat in cats:
-            occurr.append(df[df[c_col] == cat].shape[0])
+            occurr.append(df0[df0[c_col] == cat].shape[0])
         return np.array(occurr)
     y = count_occurrence_by_cat(df, cat_col, categories)
     return [est.entropy(y)]

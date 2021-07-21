@@ -10,24 +10,22 @@ def calc_number_of_days(df, datetime_col):
     z = y - x
     return z.to_pytimedelta().days
 
-''' *** DELETE THIS FUNCTION ****'''
-def filterDayHoursActivities(df, datetime_col, start_time, end_time):
-    df['date'] = df[datetime_col]
-    df1 = df.set_index('date')
+
+def filter_day_hours(df, datetime_col, start_time, end_time):
+    df1 = df.set_index(datetime_col)
     return df1.between_time(start_time, end_time)
 
-def create_column_day_of_week(df, datetime_col, col_name):
-    df[col_name] = pd.to_datetime((df[datetime_col]).dt.date).dt.day_name()
-    return df
 
+# todo : Delete this function
 def createColumnDayDate(df, datetime_col, col_name):
     df[col_name] = (df[datetime_col]).dt.date
     return df
 
 
-def filter_by_weekends(df, lat_long, name):
-    weekend = get_weekdays_by_loc(lat_long[0], lat_long[1]) if lat_long != (0., 0.) else ['Saturday', 'Sunday']
-    return df.loc[df[name].isin(weekend)]
+def filter_by_weekends(df, lat_long, datetime_col, col_name):
+    df[col_name] = pd.to_datetime((df[datetime_col]).dt.date).dt.day_name()
+    weekend = get_weekdays_by_loc(lat_long[0], lat_long[1]) if lat_long != (-1.0, -1.0) else ['Saturday', 'Sunday']
+    return df.loc[df[col_name].isin(weekend)]
 
 
 def get_weekdays_by_loc(lat, long):
