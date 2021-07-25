@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from vector_creator.preprocess import utils
-from vector_creator.stats_models.estimators import hober_m, qn
+from vector_creator.stats_models.estimators import qn
 
 
 '''
@@ -31,7 +31,7 @@ def daily_mean_std_by_cat(df, sample_field, data_field, cat_field, cat, func):
     if df.size == 0:
         return [float(0), float(0)]
     np_list = df.groupby(pd.Grouper(key=sample_field, freq='D')).agg({data_field: [func]}).to_numpy().T[0]
-    return [np.mean(np_list), np.std(np_list)] + qn(np_list)
+    return [np.mean(np_list), np.std(np_list)]
 
 # Mean and Std of continuous event (same event that happens one after the other)
 def daily_mean_std_cont_event_by_cat(df, sample_field, cat_field, cat, data_field):
@@ -99,7 +99,7 @@ class NightHoursByCat(object):
         if y.empty:
             return [float(0), float(0)]
         y1 = y.groupby(pd.Grouper( freq='D')).agg({data_col : [func]}).to_numpy().T[0]
-        return [np.mean(y1), np.std(y1)] + qn(y1)
+        return [np.mean(y1), np.std(y1)]
 
 
 class WeekendHours(object):
