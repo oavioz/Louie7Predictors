@@ -1,5 +1,6 @@
 from vector_creator.raw_to_df.rawdata_to_df import group_metadata, uid_df_init_metadata
 from vector_creator.score_vectors.vector_descriptor import apps_installed_vector_descriptor, photo_gallery_vector_descriptor, call_logs_vector_descriptor
+from vector_creator.score_vectors.vector_indexer import vector_desc_call_logs, vector_desc_photo_gallery, vector_desc_installed_apps
 import pandas as pd
 
 
@@ -14,7 +15,9 @@ def file_list_with_unique_id(path):
     return group_metadata(path)
 
 
-vector_len = {'call_logs' : 68, 'photo_gallery' : 39, 'install_apps' : 21}
+vector_len = {'call_logs' : len(vector_desc_call_logs),
+              'photo_gallery' : len(vector_desc_photo_gallery),
+              'install_apps' : len(vector_desc_installed_apps)}
 thd = {'call_logs' : 100, 'photo_gallery' : 100, 'install_apps' : 15}
 
 '''
@@ -52,7 +55,6 @@ def create_photo_gallery_vector_for_unique_id(df0, lat_long):
 
 
 def create_call_logs_vector_for_unique_id(df0, lat_long):
-    print("CALL-LOGS")
     df = df0.sort_values('CALL_DATE_TIME')
     call_logs_score_vec = []
     func_dict = call_logs_vector_descriptor(df=df, lat_long=lat_long)
@@ -63,13 +65,13 @@ def create_call_logs_vector_for_unique_id(df0, lat_long):
 
 def score_vector_for_init_metadata(uid, df_dict, lat_long):
     df = df_dict.get(uid+'_CallLogs')
-    print(len(df))
+    print('call-logs: ', len(df))
     call_logs_score_vector = create_call_logs_vector_for_unique_id(df0=df, lat_long=lat_long) if len(df) >= thd['call_logs'] else [0] * vector_len['call_logs']
     df = df_dict.get(uid+'_ImgMetaData')
-    print(len(df))
+    print('photo-gallery: ', len(df))
     photo_gallery_vector = create_photo_gallery_vector_for_unique_id(df0=df, lat_long=lat_long) if len(df) >= thd['photo_gallery'] else [0] * vector_len['photo_gallery']
     df = df_dict.get(uid+'_InstallApps')
-    print(len(df))
+    print('install apps: ', len(df))
     app_installed_vector = create_app_install_vector_for_unique_id(df0=df, lat_long=lat_long) if len(df) >= thd['install_apps'] else [0] * vector_len['install_apps']
     score_vector = call_logs_score_vector + photo_gallery_vector + app_installed_vector
     return pd.Series(score_vector, name=uid)
@@ -84,7 +86,7 @@ def combine_score_vectors(path):
         loc_tuple = (loc_dict[0]['Latitude'], loc_dict[0]['Longitude'])
         score_vector = score_vector_for_init_metadata(uid, uid_df_dict, loc_tuple)
         score_vector_dict[score_vector.name] = score_vector
-    return pd.concat(score_vector_dict, axis=1)
+    df = pd.concat(score_vector_dict, axis=1)
+    df['description'] = vector_desc_call_logs + vector_desc_photo_gallery + vector_desc_installed_apps
+    return df.set_index('description')
 
-
-#def convert_to_oci_ds(df):

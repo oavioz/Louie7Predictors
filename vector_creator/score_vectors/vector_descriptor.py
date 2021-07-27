@@ -1,5 +1,4 @@
 from vector_creator.preprocess.est_by_df_column import *
-# col_stats_func, minmax_by_cat, minmax_by_cat_value, col_delta_stats_func, mean_std_func, daily_mean_std_by_cat, WeekendHours, NightHours
 from vector_creator.preprocess.utils import filter_day_hours, filter_by_weekends
 from vector_creator.preprocess.ivi_irregularity import IVI, IVI2, calc_ivi_number_by_cat
 from vector_creator.preprocess.auto_regression import ar_calls, adfuller_test, ar_model, ar_dur
@@ -31,9 +30,9 @@ def apps_installed_vector_descriptor(df, lat_long):
     app_cat = apps_installed['categories']
     s = len(df)
     vector_descriptor = {
-        'mean, std, minmax and scale of number of installs in month' :
+        'mean, std, minmax of number of installs in month' :
             col_stats_func(df=df, sample_field=app_col[0], cat_field=app_col[1], func='count', freq='M'),
-        'minmax app installs per category' :
+        'minmax app category installs' :
             minmax_by_cat(df=df, cat_field=app_col[1], func='count'),
         'mean, std, minmax of days between 2 consecutive installs' :
             col_delta_stats_func(df=df, sample_field=app_col[0]),
@@ -58,7 +57,7 @@ def apps_installed_vector_descriptor(df, lat_long):
 
 
 photo_gallery = {'columns': ['IMAGE_DATE_TIME', 'IMAGE_TYPE'],
-                 'categories': ['jpeg', 'png', 'gif', 'bmp', 'webp', 'heif', 'mp4', 'mkv', '3gp', 'webm']}
+                 'categories': ['jpeg', 'png', 'gif', 'webp', 'heif', 'mp4', 'mkv', '3gp', 'webm']}
 
 
 def photo_gallery_vector_descriptor(df, lat_long):
@@ -70,22 +69,16 @@ def photo_gallery_vector_descriptor(df, lat_long):
     train, test = ar_calls(df, pg_col[0], pg_col[1])
     ivi_obj = IVI(pg_col[0], pg_col[1], 'D', 'W')
     #
-    def count_by_image_cat():
-        out_lst = []
-        for cat in pg_cat:
-            out_lst += daily_mean_std_by_cat(df, pg_col[0], pg_col[1], pg_col[1], cat, 'count')
-        return out_lst
-    #
     vector_descriptor = {
         'mean, std and scale of number of photos per day' :
             mean_std_func(df, sample_field=pg_col[0], data_field=pg_col[1], func='count', freq='D'),
-        'mean, std and scale of number of unique photo format per day':
+        'mean, std of number of unique photo format per day':
             mean_std_func(df, sample_field=pg_col[0], data_field=pg_col[1], func='nunique', freq='D'),
-        'mean, std of number of photos per day by image format':
-            count_by_image_cat(),
+        'minmax and ratio of format category':
+            minmax_by_cat(df=df, cat_field=pg_col[1], func='count'),
         'mean, std and scale of number of photos in weekend':
             weekend_h(data_col=pg_col[1], freq='D', func='count'),
-        'mean, std and scale of number of photos at night':
+        'mean, std of number of photos at night':
             night_h(df=df, data_col=pg_col[1], func='count'),
         'test if mean number of photos a day is stationary time series':
             adfuller_test(train),
@@ -128,7 +121,7 @@ def call_logs_vector_descriptor(df, lat_long):
     vector_descriptor = {
         'mean, std and scale of number of calls a day' :
             mean_std_func(df, sample_field=cl_col[0], data_field=cl_col[1], func='count', freq='D'),
-        'mean, std and scale of unique phone numbers calls a day':
+        'mean, std of unique phone numbers calls a day':
             mean_std_func(df, sample_field=cl_col[0], data_field=cl_col[1], func='nunique', freq='D'),
         'mean, std and scale of duration of calls a day':
             mean_std_func(df, sample_field=cl_col[0], data_field=cl_col[2], func=f, freq='D'),
@@ -144,9 +137,9 @@ def call_logs_vector_descriptor(df, lat_long):
             daily_mean_std_by_cat(df, sample_field=cl_col[0], data_field=cl_col[2], cat_field=cl_col[3], cat=cl_cat[1], func=f),
         'mean and std of missed calls a day':
             daily_mean_std_by_cat(df, sample_field=cl_col[0], data_field=cl_col[1], cat_field=cl_col[3], cat=cl_cat[2], func='count'),
-        'mean, std and scale of number of calls in night':
+        'mean, std of number of calls in night':
             night_h(df, data_col=cl_col[1], func='count'),
-        'mean, std and scale of unique phone numbers in night':
+        'mean, std of unique phone numbers in night':
             night_h(df, data_col=cl_col[1], func='nunique'),
         'mean and std of incoming calls in night':
             night_h_cat(df, data_col=cl_col[1], cat=cl_cat[0], func='count'),
@@ -162,13 +155,13 @@ def call_logs_vector_descriptor(df, lat_long):
             weekend_h(data_col=cl_col[1], freq='D', func='count'),
         'mean, std and scale of duration of calls in weekend':
             weekend_h(data_col=cl_col[2], freq='D', func=f),
-        'mean, std and scale of unique numbers in weekend':
+        'mean, std of unique numbers in weekend':
             weekend_h(data_col=cl_col[1], freq='D', func='nunique'),
         'mean and std of repetitive calls in weekend':
             weekend_h(data_col=cl_col[1], freq='D', func='size'),
         'the ratio of response to incoming calls':
             call_response_rate(df, cl_col[3], cl_cat),
-        'the ration of response to outgoing calls':
+        'the ratio of response to outgoing calls':
             outgoing_answered_rate(df, cl_col[3], cl_col[2], cl_cat),
         'entropy of duration for incoming calls':
             entropy_of_duration_by_cat(df, cl_col[2], cl_col[3], cat=cl_cat[0]),
