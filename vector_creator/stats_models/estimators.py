@@ -1,6 +1,6 @@
 import scipy.stats as cpy
 import numpy as np
-from statsmodels.robust.scale import qn_scale, Huber
+from statsmodels.robust.scale import qn_scale, Huber, mad
 from statsmodels.tsa.ar_model import AutoReg
 from statsmodels.tsa.stattools import kpss
 from sklearn.metrics import mean_squared_error, mean_absolute_error
@@ -55,6 +55,12 @@ def qn(data_set):
     if len(data_set) < 3 :
         return [-1.0]
     return [qn_scale(data_set)]
+
+
+def mad_calc(data):
+    if len(data) < 3 :
+        return [-1.0]
+    return [mad(data)]
 
 
 

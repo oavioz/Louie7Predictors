@@ -2,6 +2,7 @@ from vector_creator.raw_to_df.rawdata_to_df import group_metadata, uid_df_init_m
 from vector_creator.score_vectors.vector_descriptor import apps_installed_vector_descriptor, photo_gallery_vector_descriptor, call_logs_vector_descriptor
 from vector_creator.score_vectors.vector_indexer import vector_desc_call_logs, vector_desc_photo_gallery, vector_desc_installed_apps
 import pandas as pd
+import shutil
 
 
 '''
@@ -11,24 +12,12 @@ return :
 '''
 
 
-def file_list_with_unique_id(path):
-    return group_metadata(path)
-
 
 vector_len = {'call_logs' : len(vector_desc_call_logs),
               'photo_gallery' : len(vector_desc_photo_gallery),
               'install_apps' : len(vector_desc_installed_apps)}
 thd = {'call_logs' : 100, 'photo_gallery' : 100, 'install_apps' : 15}
-
-'''
-return :
-        dict {sampling config},
-        dict {init_metadata_field_name(CallLogs, ImgMetaData, InstallApps, LocationInfo) : df}
-'''
-
-
-def df_for_init_meta(uid, path, metadata_file_list):
-    return uid_df_init_metadata(uid, path, metadata_file_list)
+folders = {'processed_files' : 'processed/', 'small_files' : 'less_then_thd_size/'}
 
 
 '''
@@ -82,10 +71,15 @@ def combine_score_vectors(path):
     score_vector_dict = {}
     for uid in uid_list.get('unique_ids'):
         print(uid)
-        loc_dict, uid_df_dict = uid_df_init_metadata(uid, path, uid_list.get('file_list'))
-        loc_tuple = (loc_dict[0]['Latitude'], loc_dict[0]['Longitude'])
-        score_vector = score_vector_for_init_metadata(uid, uid_df_dict, loc_tuple)
-        score_vector_dict[score_vector.name] = score_vector
+        uid_file, loc_dict, uid_df_dict = uid_df_init_metadata(uid, path, uid_list.get('file_list'))
+        if not 'empty' in uid_df_dict.keys():
+            loc_tuple = (loc_dict[0]['Latitude'], loc_dict[0]['Longitude'])
+            score_vector = score_vector_for_init_metadata(uid, uid_df_dict, loc_tuple)
+            score_vector_dict[score_vector.name] = score_vector
+            dst = path + folders['processed_files'] + uid_file
+        else:
+            dst = path + folders['small_files'] + uid_file
+        shutil.move(path+uid_file, dst)
     df = pd.concat(score_vector_dict, axis=1)
     df['description'] = vector_desc_call_logs + vector_desc_photo_gallery + vector_desc_installed_apps
     return df.set_index('description')
