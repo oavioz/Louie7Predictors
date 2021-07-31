@@ -20,8 +20,11 @@ df_cont_fields = [('ScreenInfo', 'Sampling_Collect_Time'),
                   ('ActiveAppSamplingInfo', 'ActiveAppSamplingTime')]
 
 
+min_file_size = 16384
+
+
 def group_metadata(path):
-    metadata_file_list = list_of_json_files(path)
+    metadata_file_list = list_of_json_files_2(path)
     if not metadata_file_list:
         return {}
     unique_uid_set = set(map(lambda x: x.split('_')[0], metadata_file_list))
@@ -30,8 +33,12 @@ def group_metadata(path):
 
 def uid_df_init_metadata(uid, path, metadata_file_list):
     init_metadata_df = {}
+    empty_loc = [{"Latitude" :-1.0, "Longitude": -1.0, "Sampling_Collect_Time": '00:00:00'}]
     uid_file = list(filter(lambda x: x.startswith(uid), metadata_file_list))[0]
     raw_data = json.load(codecs.open(path + uid_file, 'r', 'utf-8-sig')) # convert uid's json to dict
+    file_size = os.path.getsize(path + uid_file)
+    if file_size < min_file_size:
+        return uid_file, empty_loc, pd.DataFrame({'empty' : []})
     init_keys = df_init_fields.keys()
     for key in raw_data.keys():
         if key in init_keys:
@@ -41,10 +48,8 @@ def uid_df_init_metadata(uid, path, metadata_file_list):
             if key == 'ImgMetaData':
                 df['IMAGE_TYPE'] = df['IMAGE_TYPE'].map(lambda x: x.split(sep='/')[1])
             init_metadata_df[df_name] = df
-    loc_info = [{"Latitude" :-1.0, "Longitude": -1.0, "Sampling_Collect_Time": '00:00:00'}]
-    if 'LocationInfo' in raw_data.keys():
-        loc_info = raw_data['LocationInfo']
-    return  loc_info, init_metadata_df
+    loc_info = raw_data['LocationInfo'] if 'LocationInfo' in raw_data.keys() else empty_loc
+    return  uid_file, loc_info, init_metadata_df
 
 
 def uid_df_cont_metadata(uid, path, json_file_list,  cont_fields):
@@ -61,6 +66,14 @@ def list_of_json_files(path):
     for entry in list_of_files:
         if not fnmatch.fnmatch(entry, '*.json'):
             list_of_files.remove(entry)
+    return list_of_files
+
+
+def list_of_json_files_2(path):
+    list_of_files = []
+    for file in os.listdir(path):
+        if file.endswith('.json'):
+            list_of_files.append(file)
     return list_of_files
 
 
