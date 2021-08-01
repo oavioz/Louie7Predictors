@@ -20,7 +20,7 @@ df_cont_fields = [('ScreenInfo', 'Sampling_Collect_Time'),
                   ('ActiveAppSamplingInfo', 'ActiveAppSamplingTime')]
 
 
-min_file_size = 16384
+min_file_size = 8192
 
 
 def group_metadata(path):

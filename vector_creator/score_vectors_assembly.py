@@ -56,13 +56,15 @@ def score_vector_for_init_metadata(uid, df_dict, lat_long):
     df = df_dict.get(uid+'_CallLogs')
     print('call-logs: ', len(df))
     call_logs_score_vector = create_call_logs_vector_for_unique_id(df0=df, lat_long=lat_long) if len(df) >= thd['call_logs'] else [0] * vector_len['call_logs']
+    '''
     df = df_dict.get(uid+'_ImgMetaData')
     print('photo-gallery: ', len(df))
     photo_gallery_vector = create_photo_gallery_vector_for_unique_id(df0=df, lat_long=lat_long) if len(df) >= thd['photo_gallery'] else [0] * vector_len['photo_gallery']
     df = df_dict.get(uid+'_InstallApps')
     print('install apps: ', len(df))
     app_installed_vector = create_app_install_vector_for_unique_id(df0=df, lat_long=lat_long) if len(df) >= thd['install_apps'] else [0] * vector_len['install_apps']
-    score_vector = call_logs_score_vector + photo_gallery_vector + app_installed_vector
+    '''
+    score_vector = call_logs_score_vector # + photo_gallery_vector + app_installed_vector
     return pd.Series(score_vector, name=uid)
 
 
@@ -75,12 +77,15 @@ def combine_score_vectors(path):
         if not 'empty' in uid_df_dict.keys():
             loc_tuple = (loc_dict[0]['Latitude'], loc_dict[0]['Longitude'])
             score_vector = score_vector_for_init_metadata(uid, uid_df_dict, loc_tuple)
-            score_vector_dict[score_vector.name] = score_vector
-            dst = path + folders['processed_files'] + uid_file
+            if not score_vector.any():
+                dst = path + folders['small_files'] + uid_file
+            else:
+                score_vector_dict[score_vector.name] = score_vector
+                dst = path + folders['processed_files'] + uid_file
         else:
             dst = path + folders['small_files'] + uid_file
         shutil.move(path+uid_file, dst)
     df = pd.concat(score_vector_dict, axis=1)
-    df['description'] = vector_desc_call_logs + vector_desc_photo_gallery + vector_desc_installed_apps
+    df['description'] = vector_desc_call_logs # + vector_desc_photo_gallery + vector_desc_installed_apps
     return df.set_index('description')
 
