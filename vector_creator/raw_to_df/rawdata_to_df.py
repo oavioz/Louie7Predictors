@@ -1,8 +1,6 @@
-import numpy as np
 import pandas as pd
 import datetime
 import os
-import fnmatch
 import json
 import codecs
 
@@ -52,6 +50,35 @@ def uid_df_init_metadata(uid, path, metadata_file_list):
     return  uid_file, loc_info, init_metadata_df
 
 
+def list_of_json_files(path):
+    list_of_files = []
+    for file in os.listdir(path):
+        if file.endswith('.json'):
+            unique_id = file.split('_')[0]
+            file_size = os.path.getsize(path + file)
+            raw_data = json.load(codecs.open(path + file, 'r', 'utf-8-sig'))
+            list_of_files.append((unique_id, file_size, raw_data))
+    return list_of_files
+
+
+def create_df_from_init_metadata(uid, file_size, raw_data_json):
+    init_metadata_df = {}
+    empty_loc = [{"Latitude" :-1.0, "Longitude": -1.0, "Sampling_Collect_Time": '00:00:00'}]
+    if file_size < min_file_size:
+        return empty_loc, pd.DataFrame({'empty' : []})
+    init_keys = df_init_fields.keys()
+    for key in raw_data_json.keys():
+        if key in init_keys:
+            ts =  df_init_fields[key]
+            df_name = uid + '_' + key
+            df = uid_init_metadata_to_df(raw_data_json, key, ts)
+            if key == 'ImgMetaData':
+                df['IMAGE_TYPE'] = df['IMAGE_TYPE'].map(lambda x: x.split(sep='/')[1])
+            init_metadata_df[df_name] = df
+    loc_info = raw_data_json['LocationInfo'] if 'LocationInfo' in raw_data_json.keys() else empty_loc
+    return  loc_info, init_metadata_df
+
+
 def uid_df_cont_metadata(uid, path, json_file_list,  cont_fields):
     cont_metadata_df = {}
     for tp in cont_fields:
@@ -60,13 +87,6 @@ def uid_df_cont_metadata(uid, path, json_file_list,  cont_fields):
         cont_metadata_df[df_name] = df
     return cont_metadata_df
 
-
-def list_of_json_files(path):
-    list_of_files = os.listdir(path)
-    for entry in list_of_files:
-        if not fnmatch.fnmatch(entry, '*.json'):
-            list_of_files.remove(entry)
-    return list_of_files
 
 
 def list_of_json_files_2(path):

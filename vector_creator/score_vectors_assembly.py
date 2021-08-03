@@ -1,4 +1,4 @@
-from vector_creator.raw_to_df.rawdata_to_df import group_metadata, uid_df_init_metadata
+from vector_creator.raw_to_df.rawdata_to_df import group_metadata, uid_df_init_metadata, create_df_from_init_metadata
 from vector_creator.score_vectors.vector_descriptor import apps_installed_vector_descriptor, photo_gallery_vector_descriptor, call_logs_vector_descriptor
 from vector_creator.score_vectors.vector_indexer import vector_desc_call_logs, vector_desc_photo_gallery, vector_desc_installed_apps
 import pandas as pd
@@ -16,7 +16,7 @@ return :
 vector_len = {'call_logs' : len(vector_desc_call_logs),
               'photo_gallery' : len(vector_desc_photo_gallery),
               'install_apps' : len(vector_desc_installed_apps)}
-thd = {'call_logs' : 100, 'photo_gallery' : 100, 'install_apps' : 15}
+thd = {'call_logs' : 150, 'photo_gallery' : 100, 'install_apps' : 15}
 folders = {'processed_files' : 'processed/', 'small_files' : 'less_then_thd_size/'}
 
 
@@ -68,6 +68,7 @@ def score_vector_for_init_metadata(uid, df_dict, lat_long):
     return pd.Series(score_vector, name=uid)
 
 
+
 def combine_score_vectors(path):
     uid_list = group_metadata(path=path)
     score_vector_dict = {}
@@ -89,3 +90,24 @@ def combine_score_vectors(path):
     df['description'] = vector_desc_call_logs # + vector_desc_photo_gallery + vector_desc_installed_apps
     return df.set_index('description')
 
+
+def run_score_vectors(raw_data_tuple_list):
+    score_vector_dict = {}
+    for entry in raw_data_tuple_list:
+        uid = entry[0]
+        f_size = entry[1]
+        raw_data = entry[2]
+        loc_dict, uid_df_dict = create_df_from_init_metadata(uid=uid, file_size=f_size, raw_data_json=raw_data)
+        if not 'empty' in uid_df_dict.keys():
+            loc_tuple = (loc_dict[0]['Latitude'], loc_dict[0]['Longitude'])
+            score_vector = score_vector_for_init_metadata(uid, uid_df_dict, loc_tuple)
+            if score_vector.any():
+                score_vector_dict[score_vector.name] = score_vector
+                print(uid + ' processed')
+            else:
+                print(uid + ' call-logs to small to process')
+        else:
+            print(uid + ' json to small to process')
+    df = pd.concat(score_vector_dict, axis=1)
+    df['description'] = vector_desc_call_logs  # + vector_desc_photo_gallery + vector_desc_installed_apps
+    return df.set_index('description')
