@@ -32,7 +32,6 @@ def get_weekdays_by_loc(lat, long):
     geolocator = Nominatim(user_agent='Louie7ai')
     location =  geolocator.reverse([lat, long], exactly_one=True, language='en')
     country = location.raw['address'].get('country')
-    print(country)
     return  week_days_by_country.get(country)
 
 
