@@ -20,7 +20,7 @@ def ar_calls(df, datetime_col, num_col, t_size=3):
 
 
 def ar_model(train, test, lag, mse):
-    return [est.ar_model_2(train=train, test=test, lag=lag, mse=mse)] if len(train) >= 32 else float()
+    return [est.ar_model_2(train=train, test=test, lag=lag, mse=mse)] if len(train) >= 50 else [float()]
 
 
 def adfuller_test(train):

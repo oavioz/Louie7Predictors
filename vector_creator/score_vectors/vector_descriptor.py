@@ -4,6 +4,7 @@ from vector_creator.preprocess.ivi_irregularity import IVI, IVI2, calc_ivi_numbe
 from vector_creator.preprocess.auto_regression import ar_calls, adfuller_test, ar_model, ar_dur
 from vector_creator.preprocess.entropy import *
 import numpy as np
+from itertools import chain
 
 '''
 we create 3 dicts for call-logs photo gallery and install apps
@@ -118,86 +119,47 @@ def call_logs_vector_descriptor(df, lat_long):
     train1, test1 = ar_dur(df, cl_col[0], cl_col[2])
     ivi_obj = IVI2(cl_col[0], cl_col[2], cl_col[1], cl_col[3], 'D', 'W')
 
-    vector_descriptor = {
-        'mean, std and scale of number of calls a day' :
-            mean_std_func(df, sample_field=cl_col[0], data_field=cl_col[1], func='count', freq='D'),
-        'mean, std of unique phone numbers calls a day':
-            mean_std_func(df, sample_field=cl_col[0], data_field=cl_col[1], func='nunique', freq='D'),
-        'mean, std and scale of duration of calls a day':
-            mean_std_func(df, sample_field=cl_col[0], data_field=cl_col[2], func=f, freq='D'),
-        'mean and std of repetitive calls a day':
-            daily_mean_std_cont_event(df, sample_field=cl_col[0], data_field=cl_col[1]),
-        'mean and std of incoming calls a day':
-            daily_mean_std_by_cat(df, sample_field=cl_col[0], data_field=cl_col[1], cat_field=cl_col[3], cat=cl_cat[0], func='count'),
-        'mean and std of duration of incoming calls a day':
-            daily_mean_std_by_cat(df, sample_field=cl_col[0], data_field=cl_col[2], cat_field=cl_col[3], cat=cl_cat[0], func=f),
-        'mean and std of outgoing calls a day':
-            daily_mean_std_by_cat(df, sample_field=cl_col[0], data_field=cl_col[1], cat_field=cl_col[3], cat=cl_cat[1], func='count'),
-        'mean and std of duration of outgoing calls a day':
-            daily_mean_std_by_cat(df, sample_field=cl_col[0], data_field=cl_col[2], cat_field=cl_col[3], cat=cl_cat[1], func=f),
-        'mean and std of missed calls a day':
-            daily_mean_std_by_cat(df, sample_field=cl_col[0], data_field=cl_col[1], cat_field=cl_col[3], cat=cl_cat[2], func='count'),
-        'mean, std of number of calls in night':
-            night_h(df, data_col=cl_col[1], func='count'),
-        'mean, std of unique phone numbers in night':
-            night_h(df, data_col=cl_col[1], func='nunique'),
-        'mean and std of incoming calls in night':
-            night_h_cat(df, data_col=cl_col[1], cat=cl_cat[0], func='count'),
-        'mean and std of duration of incoming calls in night':
-            night_h_cat(df, data_col=cl_col[2], cat=cl_cat[0], func=f),
-        'mean and std of outgoing calls in night':
-            night_h_cat(df, data_col=cl_col[1], cat=cl_cat[1], func='count'),
-        'mean and std of duration of outgoing calls in night':
-            night_h_cat(df, data_col=cl_col[2], cat=cl_cat[1], func=f),
-        'mean and std of missed calls per night':
-            night_h_cat(df, data_col=cl_col[1], cat=cl_cat[2], func='count'),
-        'mean, std and scale of number of calls in weekend':
-            weekend_h(data_col=cl_col[1], freq='D', func='count'),
-        'mean, std and scale of duration of calls in weekend':
-            weekend_h(data_col=cl_col[2], freq='D', func=f),
-        'mean, std of unique numbers in weekend':
-            weekend_h(data_col=cl_col[1], freq='D', func='nunique'),
-        'mean and std of repetitive calls in weekend':
-            weekend_h(data_col=cl_col[1], freq='D', func='size'),
-        'the ratio of response to incoming calls':
-            call_response_rate(df, cl_col[3], cl_cat),
-        'the ratio of response to outgoing calls':
-            outgoing_answered_rate(df, cl_col[3], cl_col[2], cl_cat),
-        'entropy of duration for incoming calls':
-            entropy_of_duration_by_cat(df, cl_col[2], cl_col[3], cat=cl_cat[0]),
-        'entropy of duration for outgoing calls':
-            entropy_of_duration_by_cat(df, cl_col[2], cl_col[3], cat=cl_cat[1]),
-        'entropy of frequency of incoming calls':
-            entropy_of_freq_by_cat(df, cl_col[1], cl_col[3], cat=cl_cat[0]),
-        'entropy of frequency of outgoing calls':
-            entropy_of_freq_by_cat(df, cl_col[1], cl_col[3], cat=cl_cat[1]),
-        'test if number of calls in day is stationary':
-            adfuller_test(train),
-        'auto regression of number of calls a day with lag = 1':
-            ar_model(train, test, 1, True),
-        'auto regression of number of calls a day with lag = 4':
-            ar_model(train, test, 4, True),
-        'auto regression of number of calls a day with lag = 8':
-            ar_model(train, test, 8, True),
-        'test if duration of calls in day is stationary':
-            adfuller_test(train1),
-        'auto regression of mean duration of calls a day with lag = 1':
-            ar_model(train1, test1, 1, True),
-        'auto regression of mean duration of calls a day with lag = 4':
-            ar_model(train1, test1, 4, True),
-        'auto regression of mean duration of calls a day with lag = 8':
-            ar_model(train1, test1, 8, True),
-        'inter visit interval irregularity of number of calls a day':
-            ivi_obj(flag='number', df=df),
-        'inter visit interval irregularity of sum of duration of calls a day':
-            ivi_obj(flag='duration', df=df),
-        'inter visit interval irregularity of mean of time between calls a day':
-            ivi_obj(flag='deltaT', df=df),
-        'inter visit interval irregularity of number of incoming calls a day':
-            calc_ivi_number_by_cat(df, cl_col[0], cl_col[1], cl_col[3], cl_cat[0], 'D', 'W'),
-        'inter visit interval irregularity of number of outgoing calls a day':
-            calc_ivi_number_by_cat(df, cl_col[0], cl_col[1], cl_col[3], cl_cat[1], 'D', 'W'),
-        'inter visit interval irregularity of number of missed calls a day':
-            calc_ivi_number_by_cat(df, cl_col[0], cl_col[1], cl_col[3], cl_cat[2], 'D', 'W')
-    }
-    return vector_descriptor
+    vector_descriptor = [
+        mean_std_func(df, sample_field=cl_col[0], data_field=cl_col[1], func='count', freq='D'),
+        mean_std_func(df, sample_field=cl_col[0], data_field=cl_col[1], func='nunique', freq='D'),
+        mean_std_func(df, sample_field=cl_col[0], data_field=cl_col[2], func=f, freq='D'),
+        daily_mean_std_cont_event(df, sample_field=cl_col[0], data_field=cl_col[1]),
+        daily_mean_std_by_cat(df, sample_field=cl_col[0], data_field=cl_col[1], cat_field=cl_col[3], cat=cl_cat[0], func='count'),
+        daily_mean_std_by_cat(df, sample_field=cl_col[0], data_field=cl_col[2], cat_field=cl_col[3], cat=cl_cat[0], func=f),
+        daily_mean_std_by_cat(df, sample_field=cl_col[0], data_field=cl_col[1], cat_field=cl_col[3], cat=cl_cat[1], func='count'),
+        daily_mean_std_by_cat(df, sample_field=cl_col[0], data_field=cl_col[2], cat_field=cl_col[3], cat=cl_cat[1], func=f),
+        daily_mean_std_by_cat(df, sample_field=cl_col[0], data_field=cl_col[1], cat_field=cl_col[3], cat=cl_cat[2], func='count'),
+        night_h(df, data_col=cl_col[1], func='count'),
+        night_h(df, data_col=cl_col[1], func='nunique'),
+        night_h_cat(df, data_col=cl_col[1], cat=cl_cat[0], func='count'),
+        night_h_cat(df, data_col=cl_col[2], cat=cl_cat[0], func=f),
+        night_h_cat(df, data_col=cl_col[1], cat=cl_cat[1], func='count'),
+        night_h_cat(df, data_col=cl_col[2], cat=cl_cat[1], func=f),
+        night_h_cat(df, data_col=cl_col[1], cat=cl_cat[2], func='count'),
+        weekend_h(data_col=cl_col[1], freq='D', func='count'),
+        weekend_h(data_col=cl_col[2], freq='D', func=f),
+        weekend_h(data_col=cl_col[1], freq='D', func='nunique'),
+        weekend_h(data_col=cl_col[1], freq='D', func='size'),
+        call_response_rate(df, cl_col[3], cl_cat),
+        outgoing_answered_rate(df, cl_col[3], cl_col[2], cl_cat),
+        entropy_of_duration_by_cat(df, cl_col[2], cl_col[3], cat=cl_cat[0]),
+        entropy_of_duration_by_cat(df, cl_col[2], cl_col[3], cat=cl_cat[1]),
+        entropy_of_freq_by_cat(df, cl_col[1], cl_col[3], cat=cl_cat[0]),
+        entropy_of_freq_by_cat(df, cl_col[1], cl_col[3], cat=cl_cat[1]),
+        adfuller_test(train),
+        ar_model(train, test, 1, True),
+        ar_model(train, test, 4, True),
+        ar_model(train, test, 8, True),
+        adfuller_test(train1),
+        ar_model(train1, test1, 1, True),
+        ar_model(train1, test1, 4, True),
+        ar_model(train1, test1, 8, True),
+        ivi_obj(flag='number', df=df),
+        ivi_obj(flag='duration', df=df),
+        ivi_obj(flag='deltaT', df=df),
+        calc_ivi_number_by_cat(df, cl_col[0], cl_col[1], cl_col[3], cl_cat[0], 'D', 'W'),
+        calc_ivi_number_by_cat(df, cl_col[0], cl_col[1], cl_col[3], cl_cat[1], 'D', 'W'),
+        calc_ivi_number_by_cat(df, cl_col[0], cl_col[1], cl_col[3], cl_cat[2], 'D', 'W')
+    ]
+
+    return list(chain.from_iterable(vector_descriptor))

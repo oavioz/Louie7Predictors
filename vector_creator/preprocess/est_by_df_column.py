@@ -119,6 +119,8 @@ class WeekendHours(object):
 
 def call_response_rate(df, data_col, cat):
     dn = df.groupby(data_col).agg({data_col: ['count']})
+    if len(dn) < 3:
+        return [float()]
     incoming = dn.loc[cat[0] : ].iloc[0]
     missed = dn.loc[cat[2] : ].iloc[0]
     if float(incoming+missed) == 0:
@@ -128,10 +130,12 @@ def call_response_rate(df, data_col, cat):
 
 def outgoing_answered_rate(df ,data_col, dur_col, cat):
     y0 = df.loc[df[data_col] == cat[1]]
-    y = y0.groupby(data_col)[dur_col].apply(lambda x: x.astype(np.uint32)).to_numpy()
-    ans = np.count_nonzero(y > 0)
-    if y.size == 0:
+    if y0.empty:
         return [float()]
+    y = y0.groupby(data_col)[dur_col].apply(lambda x: x.astype(np.uint32)).to_numpy()
+    if len(y) == 0:
+        return [float()]
+    ans = np.count_nonzero(y > 0)
     return [float(ans/len(y))]
 
 

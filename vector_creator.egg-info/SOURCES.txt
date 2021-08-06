@@ -16,10 +16,10 @@ vector_creator/preprocess/est_by_df_column.py
 vector_creator/preprocess/ivi_irregularity.py
 vector_creator/preprocess/utils.py
 vector_creator/raw_to_df/__init__.py
+vector_creator/raw_to_df/load_oci_bucket.py
 vector_creator/raw_to_df/rawdata_to_df.py
 vector_creator/score_vectors/__init__.py
-vector_creator/score_vectors/apps_installed_score_vector.py
-vector_creator/score_vectors/call_logs_score_vector.py
-vector_creator/score_vectors/photo_gallery_score_vector.py
+vector_creator/score_vectors/vector_descriptor.py
+vector_creator/score_vectors/vector_indexer.py
 vector_creator/stats_models/__init__.py
 vector_creator/stats_models/estimators.py

@@ -29,25 +29,13 @@ def group_metadata(path):
     return {'unique_ids' : list(unique_uid_set), 'file_list' : metadata_file_list}
 
 
-def uid_df_init_metadata(uid, path, metadata_file_list):
-    init_metadata_df = {}
-    empty_loc = [{"Latitude" :-1.0, "Longitude": -1.0, "Sampling_Collect_Time": '00:00:00'}]
-    uid_file = list(filter(lambda x: x.startswith(uid), metadata_file_list))[0]
-    raw_data = json.load(codecs.open(path + uid_file, 'r', 'utf-8-sig')) # convert uid's json to dict
-    file_size = os.path.getsize(path + uid_file)
-    if file_size < min_file_size:
-        return uid_file, empty_loc, pd.DataFrame({'empty' : []})
-    init_keys = df_init_fields.keys()
-    for key in raw_data.keys():
-        if key in init_keys:
-            ts =  df_init_fields[key]
-            df_name = uid + '_' + key
-            df = uid_init_metadata_to_df(raw_data, key, ts)
-            if key == 'ImgMetaData':
-                df['IMAGE_TYPE'] = df['IMAGE_TYPE'].map(lambda x: x.split(sep='/')[1])
-            init_metadata_df[df_name] = df
-    loc_info = raw_data['LocationInfo'] if 'LocationInfo' in raw_data.keys() else empty_loc
-    return  uid_file, loc_info, init_metadata_df
+def list_of_json_files_2(path):
+    list_of_files = []
+    for file in os.listdir(path):
+        if file.endswith('.json'):
+            list_of_files.append(file)
+    return list_of_files
+
 
 
 def list_of_json_files(path):
@@ -61,40 +49,22 @@ def list_of_json_files(path):
     return list_of_files
 
 
-def create_df_from_init_metadata(uid, file_size, raw_data_json):
+def create_df_from_init_metadata(uid, raw_data_json):
     init_metadata_df = {}
     empty_loc = [{"Latitude" :-1.0, "Longitude": -1.0, "Sampling_Collect_Time": '00:00:00'}]
-    if file_size < min_file_size:
-        return empty_loc, pd.DataFrame({'empty' : []})
+    #if file_size < min_file_size:
+    #    return empty_loc, pd.DataFrame({'empty' : []})
     init_keys = df_init_fields.keys()
     for key in raw_data_json.keys():
         if key in init_keys:
             ts =  df_init_fields[key]
             df_name = uid + '_' + key
-            df = uid_init_metadata_to_df(raw_data_json, key, ts)
-            if key == 'ImgMetaData':
-                df['IMAGE_TYPE'] = df['IMAGE_TYPE'].map(lambda x: x.split(sep='/')[1])
+            df = uid_init_metadata_to_df(raw_data_json, key, ts) if raw_data_json[key] else pd.DataFrame({'empty' : []})
+            #if key == 'ImgMetaData':
+            #    df['IMAGE_TYPE'] = df['IMAGE_TYPE'].map(lambda x: x.split(sep='/')[1])
             init_metadata_df[df_name] = df
     loc_info = raw_data_json['LocationInfo'] if 'LocationInfo' in raw_data_json.keys() else empty_loc
     return  loc_info, init_metadata_df
-
-
-def uid_df_cont_metadata(uid, path, json_file_list,  cont_fields):
-    cont_metadata_df = {}
-    for tp in cont_fields:
-        df_name = uid + '_' + tp[0] + '_df'
-        df = uid_cont_metadata_to_df(uid, path, json_file_list, tp[0], tp[1])
-        cont_metadata_df[df_name] = df
-    return cont_metadata_df
-
-
-
-def list_of_json_files_2(path):
-    list_of_files = []
-    for file in os.listdir(path):
-        if file.endswith('.json'):
-            list_of_files.append(file)
-    return list_of_files
 
 
 '''
@@ -117,6 +87,15 @@ def uid_init_metadata_to_df(raw_dict, field, ts):
     df = df[df[ts] != 0.0]
     df[ts] = pd.to_datetime(df[ts], unit='s')
     return df
+
+
+def uid_df_cont_metadata(uid, path, json_file_list,  cont_fields):
+    cont_metadata_df = {}
+    for tp in cont_fields:
+        df_name = uid + '_' + tp[0] + '_df'
+        df = uid_cont_metadata_to_df(uid, path, json_file_list, tp[0], tp[1])
+        cont_metadata_df[df_name] = df
+    return cont_metadata_df
 
 
 def uid_cont_metadata_to_df(u_id, path, cont_metadata_files, field, date_time):
@@ -150,12 +129,3 @@ def load_metadata(path, uid, field):
     raw_data = json.load(codecs.open(path + uid, 'r', 'utf-8-sig'))
     return pd.json_normalize(raw_data, record_path=[field])
 
-
-def uid_init_metadata_to_df_simple(path, fname, field, ts):
-    with open(path+fname) as initRawData:
-        raw_data = json.load(initRawData)
-    df = pd.json_normalize(raw_data, record_path=[field])
-    df[ts] = pd.to_numeric(ts, downcast="float")
-    df[ts] = pd.to_datetime(df[ts], unit='s')
-    df = add_day_of_week(df, ts)
-    return df
