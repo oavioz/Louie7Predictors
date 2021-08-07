@@ -52,13 +52,13 @@ def hober_m(data_set, n):
 
 
 def qn(data_set):
-    if len(data_set) < 3 :
+    if len(data_set) < 7 and np.count_nonzero(data_set) == 0:
         return [-1.0]
     return [qn_scale(data_set)]
 
 
 def mad_calc(data):
-    if len(data) < 3 :
+    if len(data) < 7 and np.count_nonzero(data) == 0:
         return [-1.0]
     return [mad(data)]
 

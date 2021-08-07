@@ -43,17 +43,14 @@ def list_of_json_files(path):
     for file in os.listdir(path):
         if file.endswith('.json'):
             unique_id = file.split('_')[0]
-            file_size = os.path.getsize(path + file)
             raw_data = json.load(codecs.open(path + file, 'r', 'utf-8-sig'))
-            list_of_files.append((unique_id, file_size, raw_data))
+            list_of_files.append((unique_id, raw_data))
     return list_of_files
 
 
 def create_df_from_init_metadata(uid, raw_data_json):
     init_metadata_df = {}
     empty_loc = [{"Latitude" :-1.0, "Longitude": -1.0, "Sampling_Collect_Time": '00:00:00'}]
-    #if file_size < min_file_size:
-    #    return empty_loc, pd.DataFrame({'empty' : []})
     init_keys = df_init_fields.keys()
     for key in raw_data_json.keys():
         if key in init_keys:

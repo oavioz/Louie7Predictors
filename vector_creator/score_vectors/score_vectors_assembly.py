@@ -56,9 +56,12 @@ def score_vector_for_init_metadata(uid, df_dict, lat_long):
     if not df.empty:
         df0 = df.sort_values(by='CALL_DATE_TIME', ascending=True)
         days = np.abs(calc_number_of_days(df0, 'CALL_DATE_TIME'))
-        mask = days >= 60 and len(df0) >= 10 or  days >= thd['sample_days'] and len(df) >= thd['call_logs']
-        print('days : ', days)
-        call_logs_score_vector = call_logs_vector_descriptor(df=df0, lat_long=lat_long) if mask else call_logs_score_vector
+        n_nan = df['CALL_TYPE'].isnull().sum()
+        n_zero = (df['CALL_DURATION'] == '0').sum()
+        mask0 = float(n_nan / len(df)) < 0.5 or float(n_zero / len(df)) < 0.5
+        mask1 = days >= 60 and len(df) >= 15 or  days >= thd['sample_days'] and len(df) >= thd['call_logs']
+        print('days : ', days, 'mask: ', mask0)
+        call_logs_score_vector = call_logs_vector_descriptor(df=df0, lat_long=lat_long) if mask1 and mask0 else call_logs_score_vector
 
     '''
     df = df_dict.get(uid+'_ImgMetaData')
@@ -99,7 +102,6 @@ def score_vector_constructor(path):
     for file in os.listdir(path):
         if file.endswith('.json'):
             unique_id = file.split('_')[0]
-            #file_size = os.path.getsize(path + file)
             raw_data = json.load(codecs.open(path + file, 'r', 'utf-8-sig'))
             vscore = run_score_vector(uid=unique_id, raw_data=raw_data)
             if vscore.any():
@@ -122,8 +124,8 @@ def score_vector_from_bucket(object_storage_client):
             vscore = run_score_vector(uid=uid, raw_data=raw_data)
             if vscore.any():
                 score_vector_dict[vscore.name] = vscore
-                counter = counter + 1
-                print(counter)
+            counter = counter + 1
+            print(counter)
     df = pd.concat(score_vector_dict, axis=1)
     df['description'] = vector_desc_call_logs  # + vector_desc_photo_gallery + vector_desc_installed_apps
     return df.set_index('description')

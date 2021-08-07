@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from vector_creator.preprocess import utils
-from vector_creator.stats_models.estimators import qn
+from vector_creator.stats_models.estimators import mad_calc
 
 
 '''
@@ -14,7 +14,7 @@ def mean_std_func(df, sample_field, data_field, func, freq):
         return [float(0), float(0)]
     np_list = df.groupby(pd.Grouper(key=sample_field, freq=freq)).agg({data_field : [func]}).to_numpy().T[0]
     y = [np.mean(np_list), np.std(np_list)]
-    return y if func == 'nunique' else y + qn(np_list)
+    return y if func == 'nunique' else y + mad_calc(np_list)
 
 # Mean and Std of continuous event (same event that happens one after the other)
 def daily_mean_std_cont_event(df, sample_field, data_field):
