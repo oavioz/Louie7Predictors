@@ -6,9 +6,10 @@ import codecs
 
 
 df_init_fields =  {
-    'CallLogs' : 'CALL_DATE_TIME',
-    'ImgMetaData' : 'IMAGE_DATE_TIME',
-    'InstallApps' : 'INSTALL_DATETIME'}
+    'CallLogs' : 'CALL_DATE_TIME'
+    #'ImgMetaData' : 'IMAGE_DATE_TIME',
+    #'InstallApps' : 'INSTALL_DATETIME'
+}
 
 
 df_cont_fields = [('ScreenInfo', 'Sampling_Collect_Time'),
@@ -50,16 +51,17 @@ def list_of_json_files(path):
 
 def create_df_from_init_metadata(uid, raw_data_json):
     init_metadata_df = {}
+    df_empty = pd.DataFrame({'empty' : []})
     empty_loc = [{"Latitude" :-1.0, "Longitude": -1.0, "Sampling_Collect_Time": '00:00:00'}]
     init_keys = df_init_fields.keys()
     for key in raw_data_json.keys():
+        df_name = uid + '_' + key
         if key in init_keys:
             ts =  df_init_fields[key]
-            df_name = uid + '_' + key
-            df = uid_init_metadata_to_df(raw_data_json, key, ts) if raw_data_json[key] else pd.DataFrame({'empty' : []})
-            #if key == 'ImgMetaData':
-            #    df['IMAGE_TYPE'] = df['IMAGE_TYPE'].map(lambda x: x.split(sep='/')[1])
+            df = uid_init_metadata_to_df(raw_data_json, key, ts) if raw_data_json[key] else df_empty
             init_metadata_df[df_name] = df
+        else:
+            init_metadata_df[df_name] = df_empty
     loc_info = raw_data_json['LocationInfo'] if 'LocationInfo' in raw_data_json.keys() else empty_loc
     return  loc_info, init_metadata_df
 

@@ -22,6 +22,6 @@ def entropy_of_cat(df, cat_col, categories):
         for cat in cats:
             occurr.append(df0[df0[c_col] == cat].shape[0])
         return np.array(occurr)
+    df[cat_col] = df[cat_col].apply(lambda x : x.split('/')[1] if len(x.split('/')) == 2 else x)
     y = count_occurrence_by_cat(df, cat_col, categories)
     return [est.entropy(y)]
-

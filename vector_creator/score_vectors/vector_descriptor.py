@@ -34,7 +34,7 @@ def apps_installed_vector_descriptor(df, lat_long):
         'mean, std, minmax of number of installs in month' :
             col_stats_func(df=df, sample_field=app_col[0], cat_field=app_col[1], func='count', freq='M'),
         'minmax app category installs' :
-            minmax_by_cat(df=df, cat_field=app_col[1], func='count'),
+            minmax_ratio_by_cat(df=df, cat_field=app_col[1], func='count'),
         'mean, std, minmax of days between 2 consecutive installs' :
             col_delta_stats_func(df=df, sample_field=app_col[0]),
         'percentage of apps install in day time' :
@@ -70,33 +70,20 @@ def photo_gallery_vector_descriptor(df, lat_long):
     train, test = ar_calls(df, pg_col[0], pg_col[1])
     ivi_obj = IVI(pg_col[0], pg_col[1], 'D', 'W')
     #
-    vector_descriptor = {
-        'mean, std and scale of number of photos per day' :
-            mean_std_func(df, sample_field=pg_col[0], data_field=pg_col[1], func='count', freq='D'),
-        'mean, std of number of unique photo format per day':
-            mean_std_func(df, sample_field=pg_col[0], data_field=pg_col[1], func='nunique', freq='D'),
-        'minmax and ratio of format category':
-            minmax_by_cat(df=df, cat_field=pg_col[1], func='count'),
-        'mean, std and scale of number of photos in weekend':
-            weekend_h(data_col=pg_col[1], freq='D', func='count'),
-        'mean, std of number of photos at night':
-            night_h(df=df, data_col=pg_col[1], func='count'),
-        'test if mean number of photos a day is stationary time series':
-            adfuller_test(train),
-        'auto regression on number of photos per day with test size 3 and lag 1':
-            ar_model(train, test, 1, True),
-        'auto regression on number of photos per day with test size 3 and lag 4':
-            ar_model(train, test, 4, True),
-        'auto regression on number of photos per day with test size 3 and lag 8':
-            ar_model(train, test, 8, True),
-        'entropy on photo category':
-            entropy_of_cat(df, pg_col[1], pg_cat),
-        'inter visit interval irregularity on photos per day':
-            ivi_obj(flag='occurr', df=df),
-        'inter visit interval irregularity on time between photos':
-            ivi_obj(flag='deltaT', df=df)
-    }
-    return vector_descriptor
+    vector_descriptor = [
+        mean_std_func(df, sample_field=pg_col[0], data_field=pg_col[1], func='count', freq='D'),
+        mean_std_func(df, sample_field=pg_col[0], data_field=pg_col[1], func='nunique', freq='D'),
+        minmax_ratio_by_cat(df=df, cat_field=pg_col[1], func='count'),
+        weekend_h(data_col=pg_col[1], freq='D', func='count'),
+        night_h(df=df, data_col=pg_col[1], func='count'),
+        ar_model(train, test, 1, True),
+        ar_model(train, test, 4, True),
+        ar_model(train, test, 16, True),
+        entropy_of_cat(df, pg_col[1], pg_cat),
+        ivi_obj(flag='number', df=df),
+        ivi_obj(flag='deltaT', df=df)
+    ]
+    return list(chain.from_iterable(vector_descriptor))
 
 
 call_logs = {'categories' : ['INCOMING', 'OUTGOING', 'MISSED'],

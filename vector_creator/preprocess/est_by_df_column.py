@@ -62,13 +62,13 @@ def col_delta_stats_func(df, sample_field):
             np.max(df['DELTA']/sec_in_day)]
 
 
-def minmax_by_cat(df, cat_field, func='count'):
+def minmax_ratio_by_cat(df, cat_field, func='count'):
     z = df.groupby(cat_field).agg({cat_field: [func]}).to_numpy().T[0]
     min = float(np.min(z))
     max = float(np.max(z))
     r_min = min/len(df)
     r_max = max/len(df)
-    return [min, max, r_min, r_max]
+    return [r_min, r_max]
 
 
 def minmax_by_cat_value(df, cat_field, val_field, val, func='count'):
@@ -89,7 +89,8 @@ class NightHours(object):
             return [float(0), float(0)]
         x = df2.groupby(pd.Grouper(freq='D')).agg({data_col: [func]})
         y =  x.to_numpy().T[0]
-        return [np.mean(y.T), np.std(y.T)] # + qn(y)
+        res = [np.mean(y), np.std(y)]
+        return res + mad_calc(y) if func == 'count' else res
 
 
 class NightHoursByCat(object):
@@ -114,7 +115,8 @@ class WeekendHours(object):
         self.df = df1
 
     def __call__(self, data_col, freq, func='count'):
-        return daily_mean_std_cont_event(self.df, self.datetime_col, data_col) if func == 'size' else mean_std_func(self.df, self.datetime_col, data_col, func, freq)
+        y = daily_mean_std_cont_event(self.df, self.datetime_col, data_col) if func == 'size' else mean_std_func(self.df, self.datetime_col, data_col, func, freq)
+        return y[0:2]
 
 
 def call_response_rate(df, data_col, cat):
