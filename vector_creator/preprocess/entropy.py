@@ -3,17 +3,24 @@ import numpy as np
 
 def entropy_of_duration_by_cat(df, dur_col, cat_col, cat):
     df = df.loc[df[cat_col] == cat]
-    y =  df[dur_col].to_numpy()
-    y0 = 10 * np.round(y.astype(np.float64)/10, 0)
+    x =  df[dur_col]
+    y = x[x != '0']
+    y0 = 30 * np.round(y.astype(np.float64)/30, 0)
     return [est.entropy(y0)]
 
 
 # for call_logs, freq column is phone numbers
 def entropy_of_freq_by_cat(df, freq_col, cat_col, cat):
+    df['HOUR'] = df[freq_col].dt.hour
     df = df.loc[df[cat_col] == cat]
-    y = df.groupby(freq_col)[freq_col].agg('count').to_numpy()
-    y0 = 10 * np.round(y.astype(np.float64)/10, 0)
-    return [est.entropy(y0)]
+    y = df.groupby('HOUR')['HOUR'].agg('count').to_numpy()
+    return [est.entropy(y)]
+
+
+def entropy_of_number_by_cat(df, num_col, cat_col, cat):
+    df = df.loc[df[cat_col] == cat]
+    y = df.groupby(num_col)[num_col].agg('count').to_numpy()
+    return [est.entropy(y)]
 
 
 def entropy_of_cat(df, cat_col, categories):

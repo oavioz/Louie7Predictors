@@ -64,7 +64,7 @@ def score_vector_for_init_metadata(uid, df_dict, lat_long):
     if not df.empty:
         df0 = df.sort_values(by='CALL_DATE_TIME', ascending=True)
         days = np.abs(calc_number_of_days(df0, 'CALL_DATE_TIME'))
-        mask1 = days >= 60 and len(df) >= 15 or days >= thd['sample_days'] and len(df) >= thd['call_logs']
+        mask1 = days >= 60 and len(df) >= 20 or days >= thd['sample_days'] and len(df) >= thd['call_logs']
         if mask1:
             n_nan = df['CALL_TYPE'].isnull().sum()
             n_zero = (df['CALL_DURATION'] == '0').sum()
@@ -116,14 +116,14 @@ def score_vector_constructor(path, flag):
             if vscore.any():
                 score_vector_dict[vscore.name] = vscore
     df = pd.concat(score_vector_dict, axis=1)
-    print(df.shape)
     if flag == 'call-logs':
         df['description'] = vector_desc_call_logs  # + vector_desc_photo_gallery + vector_desc_installed_apps
     else: # elif flag == 'photo-gallery':
         df['description'] = vector_desc_photo_gallery
-    #else:
-    #    df['description'] = vector_desc_call_logs + vector_desc_photo_gallery
-    return df.set_index('description').transpose()
+    dft = df.set_index('description').transpose()
+    print(dft.shape)
+    mean_by_feature = dft.mean(axis=0)
+    return dft/mean_by_feature, mean_by_feature
 
 
 def score_vector_from_bucket(object_storage_client, flag, start_str):
@@ -145,6 +145,6 @@ def score_vector_from_bucket(object_storage_client, flag, start_str):
         df['description'] = vector_desc_call_logs  # + vector_desc_photo_gallery + vector_desc_installed_apps
     else: #elif flag == 'photo-gallery':
         df['description'] = vector_desc_photo_gallery
-    #else:
-    #    df['description'] = vector_desc_call_logs + vector_desc_photo_gallery
-    return df.set_index('description').transpose()
+    dft = df.set_index('description').transpose()
+    mean_by_feature = dft.mean(axis=0)
+    return dft.div(mean_by_feature, axis=0), mean_by_feature

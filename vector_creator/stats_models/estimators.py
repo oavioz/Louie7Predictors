@@ -60,7 +60,7 @@ def qn(data_set):
 def mad_calc(data):
     if len(data) < 7 and np.count_nonzero(data) == 0:
         return [-1.0]
-    return [mad(data)]
+    return mad(data)
 
 
 

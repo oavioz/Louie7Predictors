@@ -4,7 +4,7 @@ import numpy as np
 import  vector_creator.stats_models.estimators as est
 from statsmodels.tsa.stattools import adfuller
 
-# AR(1) , AR(2), AR(4) , AR(8)
+# AR(1) , AR(2), AR(4) , AR(16)
 def ar_dur(df, datetime_col, dur_col, t_size=3):
     df[dur_col] = df[dur_col].astype(np.uint32)
     y0 = df.groupby(pd.Grouper(key=datetime_col, freq='D')).agg({dur_col: ['mean']}).fillna(0)
