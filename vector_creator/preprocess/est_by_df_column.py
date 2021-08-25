@@ -10,15 +10,17 @@ return a numpy array of tuple(mean, std) for specific timeframe (day)
 func in  [count , nunique, f]
 '''
 def mean_std_func(df, sample_field, data_field, func, freq):
+    r0 = [float(0), float(0), float(0)]
+    r1 = [float(0), float(0)]
     if df.empty:
-        r = [float(0), float(0), float(0)]
-        return [float(0)] + r if func == 'count' else r
+        return r1 if func == 'nunique' else [float(0)] + r0
     x = df.groupby(pd.Grouper(key=sample_field, freq=freq)).agg({data_field : [func]})
     y = x[data_field].values.T[0]
     nz = y[y > 0]
-    nz0 = [np.mean(nz), np.std(nz), mad_calc(nz)]
-    nz1 = [np.mean(nz), np.std(nz)]
-    return nz1 if func == 'nunique' else [float(len(nz)/len(y))] + nz0
+    nz0 = [np.mean(nz), np.std(nz), mad_calc(nz)] if len(nz) > 0 else r0
+    nz1 = [np.mean(nz), np.std(nz)] if len(nz) > 0 else r1
+    ratio = [float(len(nz)/len(y))] if len(y) > 0 else [float()]
+    return nz1 if func == 'nunique' else ratio + nz0
 
 # Mean and Std of continuous event (same event that happens one after the other)
 def daily_mean_std_cont_event(df, sample_field, data_field):
@@ -30,28 +32,29 @@ def daily_mean_std_cont_event(df, sample_field, data_field):
 
 #func in  [count , nunique, f]
 def daily_mean_std_by_cat(df, sample_field, data_field, cat_field, cat, func):
-    if df.empty:
-        r = [float(0), float(0), float(0)]
-        return [float(0)] + r if func == 'count' else r
+    r0 = [float(0), float(0), float(0)]
+    r1 = [float(0), float(0)]
     df = df.loc[df[cat_field] == cat]
     if df.size == 0:
-        r = [float(0), float(0), float(0)]
-        return [float(0)] + r if func == 'count' else r
+        if func == 'count':
+            return [float(0)] + r0
+        return r1 if func == 'nunique' else r0  # duration
     x = df.groupby(pd.Grouper(key=sample_field, freq='D')).agg({data_field: [func]})
     y = x[data_field].values.T[0]
     nz = y[y > 0]
-    nz0 = [np.mean(nz), np.std(nz), mad_calc(nz)]
-    nz1 = [np.mean(nz), np.std(nz)]
+    nz0 = [np.mean(nz), np.std(nz), mad_calc(nz)] if len(nz) > 0 else r0
+    nz1 = [np.mean(nz), np.std(nz)] if len(nz) > 0 else r1
+    ratio = [float(len(nz) / len(y))] if len(y) > 0 else [float()]
     if func == 'count':
-        return [float(len(nz) / len(y))] + nz0
+        return ratio + nz0
     return nz1 if func == 'nunique' else nz0
 
 
 # Mean and Std of continuous event (same event that happens one after the other)
 def daily_mean_std_cont_event_by_cat(df, sample_field, cat_field, cat, data_field):
+    df = df.loc[df[cat_field] == cat]
     if df.empty:
         return [float(0), float(0)]
-    df = df.loc[df[cat_field] == cat]
     ds = df.groupby(pd.Grouper(key=sample_field, freq='D')).apply(lambda x: x.pivot_table(index=[data_field], aggfunc='size'))
     np_list = ds.groupby(level=0).agg(np.mean).to_numpy()
     return [np.mean(np_list), np.std(np_list)]
@@ -59,8 +62,6 @@ def daily_mean_std_cont_event_by_cat(df, sample_field, cat_field, cat, data_fiel
 
 #  func = 'count'
 def col_stats_func(df, sample_field, cat_field, func, freq):
-    if df.empty:
-        return [float(), float(), float(), float()]
     y = df.groupby(pd.Grouper(key=sample_field, freq=freq)).agg({cat_field: [func]}).to_numpy().T[0]
     return [np.mean(y), np.std(y), np.min(y), np.max(y)] # + qn(y)
 
@@ -98,15 +99,17 @@ class NightHours(object):
     def __call__(self, df, data_col,  func='count'):  # count , nunique
         df1 = df.set_index(self.sample_col)
         df2 = df1.between_time('20:00:00', '08:00:00')
+        r0 = [float(0), float(0)]
+        r1 = [float(0), float(0), float(0)]
         if df2.empty:
-            r = [float(0), float(0), float(0)]
-            return [float(0)] + r if func == 'count' else r
+            return [float(0)] + r1 if func == 'count' else r0
         x = df2.groupby(pd.Grouper(freq='D')).agg({data_col: [func]})
         y = x[data_col].values.T[0]
         nz = y[y > 0]
-        res = [np.mean(nz), np.std(nz), mad_calc(nz)]
-        res0 = [np.mean(nz), np.std(nz)]
-        return res0 if func == 'nunique' else [float(len(nz) / len(y))] + res
+        res = [np.mean(nz), np.std(nz), mad_calc(nz)] if len(nz) > 0 else r1
+        res0 = [np.mean(nz), np.std(nz)] if len(nz) > 0 else r0
+        ratio = [float(len(nz) / len(y))] if len(y) > 0 else [float()]
+        return res0 if func == 'nunique' else ratio + res
 
 
 class NightHoursByCat(object):
@@ -118,14 +121,15 @@ class NightHoursByCat(object):
         df = df.loc[df[self.cat_col] == cat]
         x = df.set_index(self.sample_col)
         y = x.between_time('20:00:00', '08:00:00')
+        r = [float(0), float(0), float(0)]
         if y.empty:
-            r = [float(0), float(0), float(0)]
             return [float(0)] + r if func == 'count' else r
         y1 = y.groupby(pd.Grouper( freq='D')).agg({data_col : [func]})
         x = y1[data_col].values.T[0]
         nz = x[x > 0]
-        res = [np.mean(nz), np.std(nz), mad_calc(nz)]
-        return [float(len(nz) / len(x))] + res if func == 'count' else res
+        res = [np.mean(nz), np.std(nz), mad_calc(nz)] if len(nz) > 0 else r
+        ratio = [float(len(nz) / len(y))] if len(y) > 0 else [float()]
+        return ratio + res if func == 'count' else res
 
 
 class WeekendHours(object):

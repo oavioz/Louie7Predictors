@@ -45,7 +45,7 @@ class IVI2:
         df[dur_col] = df[dur_col].astype(np.uint32)
         y0 = df.groupby(pd.Grouper(key=datatime_col, freq=tf)).agg({dur_col: ['sum']})
         if len(y0) < 7:
-            np.array([float(-1.0)])
+            return np.array([float(-1.0)])
         return create_ivi_matrix(y0.resample(tf2))
 
 
@@ -53,7 +53,7 @@ class IVI2:
         df['DIFF'] = df[datetime_col].diff().apply(lambda x: x / np.timedelta64(1, 's')).fillna(0).astype('int64')
         y0 = df.groupby(pd.Grouper(key=datetime_col, freq=tf)).agg({'DIFF': ['mean']}).fillna(0)
         if len(y0) < 7:
-            np.array([float(-1.0)])
+            return np.array([float(-1.0)])
         return create_ivi_matrix(y0.resample(tf2))
 
 

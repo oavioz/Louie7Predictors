@@ -138,11 +138,9 @@ def call_logs_vector_descriptor(df, lat_long):
         entropy_of_freq_by_cat(df, cl_col[0], cl_col[3], cat=cl_cat[1]),
         entropy_of_number_by_cat(df, cl_col[1], cl_col[3], cat=cl_cat[0]),
         entropy_of_number_by_cat(df, cl_col[1], cl_col[3], cat=cl_cat[1]),
-        #adfuller_test(train),
         ar_model(train, test, 1, True),
         ar_model(train, test, 4, True),
         ar_model(train, test, 16, True),
-        #adfuller_test(train1),
         ar_model(train1, test1, 1, True),
         ar_model(train1, test1, 4, True),
         ar_model(train1, test1, 16, True),
@@ -152,7 +150,6 @@ def call_logs_vector_descriptor(df, lat_long):
         ivi_obj(flag='night', df=df),
         calc_ivi_number_by_cat(df, cl_col[0], cl_col[1], cl_col[3], cl_cat[0], 'D', 'W'),
         calc_ivi_number_by_cat(df, cl_col[0], cl_col[1], cl_col[3], cl_cat[1], 'D', 'W')
-        #calc_ivi_number_by_cat(df, cl_col[0], cl_col[1], cl_col[3], cl_cat[2], 'D', 'W')
     ]
 
     return list(chain.from_iterable(vector_descriptor))

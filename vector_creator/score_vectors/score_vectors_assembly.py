@@ -3,11 +3,13 @@ from vector_creator.raw_to_df.load_oci_bucket import namespace, bucket_name
 from vector_creator.score_vectors.vector_descriptor import apps_installed_vector_descriptor, photo_gallery_vector_descriptor, call_logs_vector_descriptor
 from vector_creator.score_vectors.vector_indexer import vector_desc_call_logs, vector_desc_photo_gallery, vector_desc_installed_apps
 from vector_creator.preprocess.utils import calc_number_of_days
+from vector_creator.stats_models.estimators import minmax_scale , z_score, hober_m
 import pandas as pd
 import numpy as np
 import os
 import json
 import codecs
+import shutil
 
 
 '''
@@ -49,7 +51,7 @@ def create_photo_gallery_vector_for_uid(uid, df_dict, lat_long):
         df0 = df0.reset_index(drop=True)
         days = np.abs(calc_number_of_days(df0, 'IMAGE_DATE_TIME'))
         mask0 = df['IMAGE_TYPE'].isnull().sum() / len(df) < 0.5
-        mask1 = days >= 60 and len(df) >= 15 or  days >= thd['sample_days'] and len(df) >= thd['photo_gallery']
+        mask1 = days >= 60 and len(df) >= 20 or  days >= thd['sample_days'] and len(df) >= thd['photo_gallery']
         if mask1:
             photo_gallery_score_vec = photo_gallery_vector_descriptor(df=df0,lat_long=lat_long) if mask0 else photo_gallery_score_vec
         #print('days : ', days, 'mask: ', mask0)
@@ -115,15 +117,17 @@ def score_vector_constructor(path, flag):
             vscore = run_score_vector(uid=unique_id, raw_data=raw_data, flag=flag)
             if vscore.any():
                 score_vector_dict[vscore.name] = vscore
-    df = pd.concat(score_vector_dict, axis=1)
+    df = pd.concat(score_vector_dict, axis=1).transpose()
+    uids = df.index.values
+    df_scale = z_score(df)
+    df0 = pd.DataFrame(data=df_scale, index=uids).transpose()
     if flag == 'call-logs':
-        df['description'] = vector_desc_call_logs  # + vector_desc_photo_gallery + vector_desc_installed_apps
+        df0['description'] = vector_desc_call_logs  # + vector_desc_photo_gallery + vector_desc_installed_apps
     else: # elif flag == 'photo-gallery':
         df['description'] = vector_desc_photo_gallery
-    dft = df.set_index('description').transpose()
+    dft = df0.set_index('description').transpose()
     print(dft.shape)
-    mean_by_feature = dft.mean(axis=0)
-    return dft/mean_by_feature, mean_by_feature
+    return dft# , hober_m(dft, 300)# ,dft.mean(axis=0)
 
 
 def score_vector_from_bucket(object_storage_client, flag, start_str):
@@ -140,11 +144,14 @@ def score_vector_from_bucket(object_storage_client, flag, start_str):
                 score_vector_dict[vscore.name] = vscore
             counter = counter + 1
             print(counter)
-    df = pd.concat(score_vector_dict, axis=1)
+    df = pd.concat(score_vector_dict, axis=1).transpose()
+    uids = df.index.values
+    df_scale = z_score(df)
+    df0 = pd.DataFrame(data=df_scale, index=uids).transpose()
     if flag == 'call-logs':
-        df['description'] = vector_desc_call_logs  # + vector_desc_photo_gallery + vector_desc_installed_apps
+        df0['description'] = vector_desc_call_logs  # + vector_desc_photo_gallery + vector_desc_installed_apps
     else: #elif flag == 'photo-gallery':
-        df['description'] = vector_desc_photo_gallery
-    dft = df.set_index('description').transpose()
-    mean_by_feature = dft.mean(axis=0)
-    return dft.div(mean_by_feature, axis=0), mean_by_feature
+        df0['description'] = vector_desc_photo_gallery
+    dft = df0.set_index('description').transpose()
+    print(dft.shape)
+    return dft#, dft.mean(axis=0)
