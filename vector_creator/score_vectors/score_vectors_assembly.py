@@ -1,9 +1,9 @@
 from vector_creator.raw_to_df.rawdata_to_df import create_df_from_init_metadata
 from vector_creator.raw_to_df.load_oci_bucket import namespace, bucket_name
-from vector_creator.score_vectors.vector_descriptor import apps_installed_vector_descriptor, photo_gallery_vector_descriptor, call_logs_vector_descriptor
-from vector_creator.score_vectors.vector_indexer import vector_desc_call_logs, vector_desc_photo_gallery, vector_desc_installed_apps
+from vector_creator.score_vectors.vector_descriptor import *
+from vector_creator.score_vectors.vector_indexer import *
 from vector_creator.preprocess.utils import calc_number_of_days
-from vector_creator.stats_models.estimators import minmax_scale , z_score, hober_m
+from vector_creator.stats_models.estimators import minmax_scale , z_score
 import pandas as pd
 import numpy as np
 import os
@@ -44,39 +44,34 @@ def create_app_install_vector_for_unique_id(df0, lat_long):
 def create_photo_gallery_vector_for_uid(uid, df_dict, lat_long):
     key = uid + '_ImgMetaData'
     df = df_dict.get(key) if key in df_dict.keys() else pd.DataFrame({'empty' : []})
-    photo_gallery_score_vec = [0] * vector_len['call_logs']
+    photo_gallery_score_vec = [0] * vector_len['photo_gallery']
     print('photo-gallery: ', len(df))
     if not df.empty:
         df0 = df.sort_values('IMAGE_DATE_TIME')
         df0 = df0.reset_index(drop=True)
         days = np.abs(calc_number_of_days(df0, 'IMAGE_DATE_TIME'))
-        mask0 = df['IMAGE_TYPE'].isnull().sum() / len(df) < 0.5
         mask1 = days >= 60 and len(df) >= 20 or  days >= thd['sample_days'] and len(df) >= thd['photo_gallery']
         if mask1:
+            n_nan = df['IMAGE_TYPE'].isnull().sum()
+            mask0 = float(n_nan / len(df)) < 0.5
             photo_gallery_score_vec = photo_gallery_vector_descriptor(df=df0,lat_long=lat_long) if mask0 else photo_gallery_score_vec
-        #print('days : ', days, 'mask: ', mask0)
     return pd.Series(photo_gallery_score_vec, name=uid)
 
 
 def score_vector_for_init_metadata(uid, df_dict, lat_long):
     key = uid+'_CallLogs'
-    call_logs_score_vector = [0] * vector_len['photo_gallery']
+    call_logs_score_vector = [0] * vector_len['call_logs']
     df = df_dict.get(key) if key in df_dict.keys() else pd.DataFrame({'empty' : []})
     print('call-logs: ', len(df))
     if not df.empty:
         df0 = df.sort_values(by='CALL_DATE_TIME', ascending=True)
         days = np.abs(calc_number_of_days(df0, 'CALL_DATE_TIME'))
-        mask1 = days >= 60 and len(df) >= 20 or days >= thd['sample_days'] and len(df) >= thd['call_logs']
+        mask1 = days >= 60 and len(df) >= 30 or days >= thd['sample_days'] and len(df) >= thd['call_logs']
         if mask1:
             n_nan = df['CALL_TYPE'].isnull().sum()
             n_zero = (df['CALL_DURATION'] == '0').sum()
             mask0 = float(n_nan / len(df)) < 0.5 or float(n_zero / len(df)) < 0.5
             call_logs_score_vector = call_logs_vector_descriptor(df=df0, lat_long=lat_long) if mask0 else call_logs_score_vector
-    '''
-    df = df_dict.get(uid+'_InstallApps')
-    print('install apps: ', len(df))
-    app_installed_vector = create_app_install_vector_for_unique_id(df0=df, lat_long=lat_long) if len(df) >= thd['install_apps'] else [0] * vector_len['install_apps']
-    '''
     return pd.Series(call_logs_score_vector, name=uid)
 
 '''
@@ -117,14 +112,11 @@ def score_vector_constructor(path, flag):
             vscore = run_score_vector(uid=unique_id, raw_data=raw_data, flag=flag)
             if vscore.any():
                 score_vector_dict[vscore.name] = vscore
-    df = pd.concat(score_vector_dict, axis=1).transpose()
-    uids = df.index.values
-    df_scale = z_score(df)
-    df0 = pd.DataFrame(data=df_scale, index=uids).transpose()
+    df0 = pd.concat(score_vector_dict, axis=1)
     if flag == 'call-logs':
         df0['description'] = vector_desc_call_logs  # + vector_desc_photo_gallery + vector_desc_installed_apps
     else: # elif flag == 'photo-gallery':
-        df['description'] = vector_desc_photo_gallery
+        df0['description'] = vector_desc_photo_gallery
     dft = df0.set_index('description').transpose()
     print(dft.shape)
     return dft# , hober_m(dft, 300)# ,dft.mean(axis=0)
@@ -144,14 +136,18 @@ def score_vector_from_bucket(object_storage_client, flag, start_str):
                 score_vector_dict[vscore.name] = vscore
             counter = counter + 1
             print(counter)
-    df = pd.concat(score_vector_dict, axis=1).transpose()
-    uids = df.index.values
-    df_scale = z_score(df)
-    df0 = pd.DataFrame(data=df_scale, index=uids).transpose()
+    df0 = pd.concat(score_vector_dict, axis=1)
     if flag == 'call-logs':
         df0['description'] = vector_desc_call_logs  # + vector_desc_photo_gallery + vector_desc_installed_apps
     else: #elif flag == 'photo-gallery':
         df0['description'] = vector_desc_photo_gallery
     dft = df0.set_index('description').transpose()
     print(dft.shape)
-    return dft#, dft.mean(axis=0)
+    return dft
+
+
+def normalize_scores(df, method):
+    df_scale = df.transpose()
+    if len(df) > 20:
+        df_scale =  z_score(df_scale) if method == 'z-score' else minmax_scale(df_scale) # 'minmax'
+    return df_scale.transpose()

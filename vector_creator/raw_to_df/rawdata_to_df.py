@@ -6,8 +6,8 @@ import codecs
 
 
 df_init_fields =  {
-    'CallLogs' : 'CALL_DATE_TIME'
-    #'ImgMetaData' : 'IMAGE_DATE_TIME',
+    'CallLogs' : 'CALL_DATE_TIME',
+    'ImgMetaData' : 'IMAGE_DATE_TIME'
     #'InstallApps' : 'INSTALL_DATETIME'
 }
 
@@ -78,10 +78,11 @@ def uid_init_metadata_to_df(raw_dict, field, ts):
     df =  pd.json_normalize(raw_dict, record_path=[field])
     # converting datetime timestamp from string to float to datetime
     if ts == 'IMAGE_DATE_TIME':
-        sample = df[ts][0]
-        s = sample.split(".")
-        if len(s[0]) == 7:  # bad format
-            df[ts] = df[ts].map(lambda x: x.replace('.', ''))
+        for i in range(len(df)):
+            sample = df[ts][i]
+            s = sample.split(".")
+            if len(s[0]) == 7:  # bad format
+                df[ts][i] = sample.replace('.', '')
     df[ts] = pd.to_numeric(df[ts])
     df = df[df[ts] != 0.0]
     df[ts] = pd.to_datetime(df[ts], unit='s')

@@ -30,7 +30,7 @@ def z_score(X):
 def calc_entropy(input_vector):
     acc = np.sum(input_vector)
     if acc < 1.0e-03:
-        return float(-1.0)
+        return float(-1)
     prob_vec = list(map(lambda x: float(x/acc), input_vector))
     return entropy(prob_vec, base=2, axis=0)
 
@@ -69,13 +69,13 @@ def hober_est(vector, n):
 
 def qn(data_set):
     if len(data_set) < 7 and np.count_nonzero(data_set) == 0:
-        return [-1.0]
-    return [qn_scale(data_set)]
+        return np.mean(data_set)
+    return qn_scale(data_set)
 
 
 def mad_calc(data):
-    if len(data) < 7 and np.count_nonzero(data) == 0:
-        return [-1.0]
+    if np.count_nonzero(data) == 0:
+        return [0.0]
     return mad(data)
 
 
