@@ -7,8 +7,8 @@ import codecs
 
 df_init_fields =  {
     'CallLogs' : 'CALL_DATE_TIME',
-    'ImgMetaData' : 'IMAGE_DATE_TIME'
-    #'InstallApps' : 'INSTALL_DATETIME'
+    'ImgMetaData' : 'IMAGE_DATE_TIME',
+    'InstallApps' : 'INSTALL_DATETIME'
 }
 
 

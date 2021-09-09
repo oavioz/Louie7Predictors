@@ -1,7 +1,7 @@
 from vector_creator.preprocess.est_by_df_column import *
 from vector_creator.preprocess.utils import filter_day_hours, filter_by_weekends
 from vector_creator.preprocess.ivi_irregularity import IVI, IVI2, calc_ivi_number_by_cat
-from vector_creator.preprocess.auto_regression import ar_calls, ar_model, ar_dur
+from vector_creator.preprocess.auto_regression import *
 from vector_creator.preprocess.entropy import *
 import numpy as np
 from itertools import chain
@@ -29,32 +29,18 @@ apps_installed = {'categories':
 def apps_installed_vector_descriptor(df, lat_long):
     app_col = apps_installed['columns']
     app_cat = apps_installed['categories']
-    s = len(df)
-    vector_descriptor = {
-        'mean, std, minmax of number of installs in month' :
-            col_stats_func(df=df, sample_field=app_col[0], cat_field=app_col[1], func='count', freq='M'),
-        'minmax app category installs' :
-            minmax_ratio_by_cat(df=df, cat_field=app_col[1], func='count'),
-        'mean, std, minmax of days between 2 consecutive installs' :
-            col_delta_stats_func(df=df, sample_field=app_col[0]),
-        'percentage of apps install in day time' :
-            [len(filter_day_hours(df, app_col[0], '07:00:00', '19:00:00')) / s],
-        'percentage of apps install in night time':
-            [len(filter_day_hours(df, app_col[0], '19:00:00', '07:00:00')) / s],
-        'percentage of apps install in weekend' :
-            [len(filter_by_weekends(df, lat_long, app_col[0], 'day_of_week')) / s],
-        'minmax installed app free' :
-            minmax_by_cat_value(df, cat_field=app_col[1], val_field=app_col[2], val='Free'),
-        'minmax installed app paid':
-            minmax_by_cat_value(df, cat_field=app_col[1], val_field=app_col[2], val='Paid Feature'),
-        'percentage of free installed app' :
-            [len(df[df[app_col[2]] == 'Free']) / s],
-        'percentage of paid installed app':
-            [len(df[df[app_col[2]] == 'Paid Feature']) / s],
-        'entropy of app categories' :
-            entropy_of_cat(df=df, cat_col=app_col[1], categories=app_cat)
-    }
-    return vector_descriptor
+
+    vector_descriptor = [
+        #daily_func(df, sample_field=app_col[0], data_field=app_col[1], func='count', freq='M'),
+        #col_delta_stats_func(df=df, sample_field=app_col[0]),
+        [len(filter_day_hours(df, app_col[0], '07:00:00', '19:00:00'))/ len(df),
+        len(filter_day_hours(df, app_col[0], '19:00:00', '07:00:00'))/ len(df),
+        len(filter_by_weekends(df, lat_long, app_col[0], 'day_of_week'))/ len(df),
+        len(df[df[app_col[2]] == 'Paid Feature'])/ len(df)],
+        categories_ratio(df, app_col[1], len(app_cat)),
+        entropy_of_cat(df=df, cat_col=app_col[1], categories=app_cat, fetcher_group='apps-installed')
+    ]
+    return list(chain.from_iterable(vector_descriptor))
 
 
 photo_gallery = {'columns': ['IMAGE_DATE_TIME', 'IMAGE_TYPE'],
@@ -67,22 +53,20 @@ def photo_gallery_vector_descriptor(df, lat_long):
     #
     night_h = NightHours(sample_col=pg_col[0])
     weekend_h = WeekendHours(df, datetime_col=pg_col[0], long_lat_tuple=lat_long)
-    train, test = ar_calls(df, pg_col[0], pg_col[1])
+    train, test = ar_count(df, pg_col[0], pg_col[1])
     ivi_obj = IVI(pg_col[0], pg_col[1], 'D', 'W')
     #
     vector_descriptor = [
-        mean_std_func(df, sample_field=pg_col[0], data_field=pg_col[1], func='count', freq='D'),
-        mean_std_func(df, sample_field=pg_col[0], data_field=pg_col[1], func='nunique', freq='D'),
-        minmax_ratio_by_cat(df=df, cat_field=pg_col[1], func='count'),
-        weekend_h(data_col=pg_col[1], freq='D', func='count'),
+        daily_func(df, sample_field=pg_col[0], data_field=pg_col[1], func='count', freq='D'),
+        burst_func(df, sample_field=pg_col[0], data_field=pg_col[1], func='count', freq1='1Min', freq2='W'),
         night_h(df=df, data_col=pg_col[1], func='count'),
-        ar_model(train, test, 1, True),
-        ar_model(train, test, 4, True),
-        ar_model(train, test, 8, True),
-        ar_model(train, test, 16, True),
-        entropy_of_cat(df, pg_col[1], pg_cat),
-        ivi_obj(flag='number', df=df),
-        ivi_obj(flag='deltaT', df=df)
+        weekend_h(data_col=pg_col[1], freq='D', func='count'),
+        ar(train, test, 1, True),
+        ar(train, test, 2, True),
+        ar(train, test, 4, True),
+        entropy_of_cat(df, pg_col[1], pg_cat, 'photo-gallery'),
+        entropy_of_amount(df=df, date_col=pg_col[0], cat_col=pg_col[1])
+        #ivi_obj(flag='number', df=df),
     ]
     return list(chain.from_iterable(vector_descriptor))
 
@@ -102,24 +86,24 @@ def call_logs_vector_descriptor(df, lat_long):
 
     night_h = NightHours(sample_col=cl_col[0])
     weekend_h = WeekendHours(df, datetime_col=cl_col[0], long_lat_tuple=lat_long)
-    train_c, test_c = ar_calls(df, cl_col[0], cl_col[1])
+    train_c, test_c = ar_count(df, cl_col[0], cl_col[1])
     train_d, test_d = ar_dur(df, cl_col[0], cl_col[2])
     ivi_obj = IVI2(cl_col[0], cl_col[2], cl_col[1], cl_col[3], 'D', 'W')
 
     vector_descriptor = [
-        mean_std_func(df, sample_field=cl_col[0], data_field=cl_col[1], func='count', freq='D'),
-        mean_std_func(df, sample_field=cl_col[0], data_field=cl_col[1], func='nunique', freq='D'),
-        mean_std_func(df, sample_field=cl_col[0], data_field=cl_col[2], func=f, freq='D'),
-        daily_mean_std_cont_event(df, sample_field=cl_col[0], data_field=cl_col[1]),
-        daily_mean_std_by_cat(df, sample_field=cl_col[0], data_field=cl_col[1], cat_field=cl_col[3], cat=cl_cat[0], func='count'),
-        daily_mean_std_by_cat(df, sample_field=cl_col[0], data_field=cl_col[1], cat_field=cl_col[3], cat=cl_cat[0], func='nunique'),
-        daily_mean_std_by_cat(df, sample_field=cl_col[0], data_field=cl_col[2], cat_field=cl_col[3], cat=cl_cat[0], func=f),
-        daily_mean_std_cont_event_by_cat(df, sample_field=cl_col[0], cat_field=cl_col[3], cat=cl_cat[0], data_field=cl_col[1]),
-        daily_mean_std_by_cat(df, sample_field=cl_col[0], data_field=cl_col[1], cat_field=cl_col[3], cat=cl_cat[1], func='count'),
-        daily_mean_std_by_cat(df, sample_field=cl_col[0], data_field=cl_col[1], cat_field=cl_col[3], cat=cl_cat[1], func='nunique'),
-        daily_mean_std_by_cat(df, sample_field=cl_col[0], data_field=cl_col[2], cat_field=cl_col[3], cat=cl_cat[1], func=f),
-        daily_mean_std_cont_event_by_cat(df, sample_field=cl_col[0], cat_field=cl_col[3], cat=cl_cat[1], data_field=cl_col[1]),
-        daily_mean_std_by_cat(df, sample_field=cl_col[0], data_field=cl_col[1], cat_field=cl_col[3], cat=cl_cat[2], func='count'),
+        daily_func(df, sample_field=cl_col[0], data_field=cl_col[1], func='count', freq='D'),
+        daily_func(df, sample_field=cl_col[0], data_field=cl_col[1], func='nunique', freq='D'),
+        daily_func(df, sample_field=cl_col[0], data_field=cl_col[2], func=f, freq='D'),
+        daily_cont_event(df, sample_field=cl_col[0], data_field=cl_col[1]),
+        daily_func_by_cat(df, sample_field=cl_col[0], data_field=cl_col[1], cat_field=cl_col[3], cat=cl_cat[0], func='count'),
+        daily_func_by_cat(df, sample_field=cl_col[0], data_field=cl_col[1], cat_field=cl_col[3], cat=cl_cat[0], func='nunique'),
+        daily_func_by_cat(df, sample_field=cl_col[0], data_field=cl_col[2], cat_field=cl_col[3], cat=cl_cat[0], func=f),
+        daily_cont_event_by_cat(df, sample_field=cl_col[0], cat_field=cl_col[3], cat=cl_cat[0], data_field=cl_col[1]),
+        daily_func_by_cat(df, sample_field=cl_col[0], data_field=cl_col[1], cat_field=cl_col[3], cat=cl_cat[1], func='count'),
+        daily_func_by_cat(df, sample_field=cl_col[0], data_field=cl_col[1], cat_field=cl_col[3], cat=cl_cat[1], func='nunique'),
+        daily_func_by_cat(df, sample_field=cl_col[0], data_field=cl_col[2], cat_field=cl_col[3], cat=cl_cat[1], func=f),
+        daily_cont_event_by_cat(df, sample_field=cl_col[0], cat_field=cl_col[3], cat=cl_cat[1], data_field=cl_col[1]),
+        daily_func_by_cat(df, sample_field=cl_col[0], data_field=cl_col[1], cat_field=cl_col[3], cat=cl_cat[2], func='count'),
         night_h(df, data_col=cl_col[1], func='count'),
         night_h(df, data_col=cl_col[1], func='nunique'),
         night_h(df, data_col=cl_col[2], func=f),
@@ -139,14 +123,14 @@ def call_logs_vector_descriptor(df, lat_long):
         entropy_of_number(df, cl_col[1], cl_col[3], cat='None'),
         entropy_of_number(df, cl_col[1], cl_col[3], cat=cl_cat[0]),
         entropy_of_number(df, cl_col[1], cl_col[3], cat=cl_cat[1]),
-        ar_model(train_c, test_c, 1, True),
-        ar_model(train_c, test_c, 4, True),
-        ar_model(train_c, test_c, 8, True),
-        ar_model(train_c, test_c, 16, True),
-        ar_model(train_d, test_d, 1, True),
-        ar_model(train_d, test_d, 4, True),
-        ar_model(train_d, test_d, 8, True),
-        ar_model(train_d, test_d, 16, True),
+        ar(train_c, test_c, 1, True),
+        ar(train_c, test_c, 4, True),
+        ar(train_c, test_c, 8, True),
+        ar(train_c, test_c, 16, True),
+        ar(train_d, test_d, 1, True),
+        ar(train_d, test_d, 4, True),
+        ar(train_d, test_d, 8, True),
+        ar(train_d, test_d, 16, True),
         ivi_obj(flag='number', df=df),
         ivi_obj(flag='duration', df=df),
         ivi_obj(flag='deltaT', df=df),

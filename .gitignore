@@ -4,7 +4,7 @@
 vector_creator.egg-info/*
 vector_creator/__pycache__/*
 vector_creator/raw_to_df/__pycache__/*
-vector_creator/stats_model/__pycache__/*
+vector_creator/stats_models/__pycache__/*
 vector_creator/preprocess/__pycache__/*
 vector_creator/score_vectors/__pycache__/*
 .ipynb_checkpoints/*
