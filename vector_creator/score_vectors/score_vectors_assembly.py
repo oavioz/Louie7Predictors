@@ -23,7 +23,7 @@ return :
 vector_len = {'call_logs' : len(vector_desc_call_logs),
               'photo_gallery' : len(vector_desc_photo_gallery),
               'install_apps' : len(vector_desc_installed_apps)}
-thd = {'call_logs' : 100, 'photo_gallery' : 800, 'install_apps' : 20, 'sample_days' : 30}
+thd = {'call_logs' : 300, 'photo_gallery' : 500, 'install_apps' : 30, 'sample_days' : 30}
 
 
 '''

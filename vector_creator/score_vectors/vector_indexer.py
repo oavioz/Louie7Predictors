@@ -100,16 +100,17 @@ vector_desc_photo_gallery = [
     'ar daily num of photos lag-4',
     'entropy on photo category',
     'entropy on daily photos'
-    #'ivi irregularity on photos per day'
 ]
 
 vector_desc_installed_apps = [
-    'percentage of apps install in day time',
-    'percentage of apps install in night time',
-    'percentage of apps install in weekend',
-    'percentage of paid installed app',
-    'per of apps category installed',
-    'ratio of max apps category',
-    'ratio of min apps category',
-    'entropy of app categories'
+    'entropy of app categories',
+    'entropy of install app time of day'
+    'total number of installed apps',
+    'mean of number of installed apps per category'
+    'median of number of installed apps per category'
+    'app category coverage ratio',
+    'ratio of paid apps',
+    'ar-1 install app by category',
+    'ar-4 install app by category',
+    'category of installed apps density func'
 ]

@@ -56,12 +56,12 @@ def ivi_irregularity(ivi_matrix):
 
 
 
-def hober_m(data_set, n=300):
+def huber_m(data_set, n=300):
     huber = data_set.apply(lambda x: Huber(maxiter=n)(x)[0].item(0))
     return huber
 
 
-def hober_est(vector, n=300):
+def huber_est(vector, n=300):
     huber = Huber(maxiter=n)(vector)
     return huber[0].item(0), huber[1].item(0)
 

@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from vector_creator.preprocess import utils
-from vector_creator.stats_models.estimators import hober_est, qn
+from vector_creator.stats_models.estimators import huber_est, qn
 
 
 '''
@@ -20,10 +20,14 @@ def daily_func(df, sample_field, data_field, func, freq):
         return r0
     r_est = [np.mean(nz), np.std(nz)]
     try:
-        h_est_mean, h_est_std = hober_est(nz)
+        h_est_mean, h_est_std = huber_est(nz)
         r_est = [h_est_mean, h_est_std]
     except ValueError:
-        print('huber est was not calculated')
+        print('huber est was not calculated -> value')
+    except ZeroDivisionError:
+        print('huber est was not calculated -> zero division')
+    except Exception:
+        print('huber est was not calculated -> invalid value')
     return [np.mean(nz), np.std(nz), r_est[0], r_est[1], len(nz)/len(y)]
 
 
@@ -54,7 +58,7 @@ def daily_cont_event(df, sample_field, data_field):
         return r0
     r_est = [np.mean(nz), np.std(nz)]
     try:
-        h_est_mean, h_est_std = hober_est(nz)
+        h_est_mean, h_est_std = huber_est(nz)
         r_est = [h_est_mean, h_est_std]
     except ValueError:
         print('huber est was not calculated')
@@ -73,7 +77,7 @@ def daily_func_by_cat(df, sample_field, data_field, cat_field, cat, func):
         return r1
     r_est = np.mean(nz)
     try:
-        r_est = hober_est(nz)[0]
+        r_est = huber_est(nz)[0]
     except ValueError:
         print('huber est was not calculated')
     return [np.mean(nz), r_est]
@@ -89,24 +93,6 @@ def daily_cont_event_by_cat(df, sample_field, cat_field, cat, data_field):
         return [float(0), float(0)]
     np_list = ds.groupby(level=0).agg(np.mean).to_numpy()
     return [np.mean(np_list), np.std(np_list)]
-
-
-def col_delta_stats_func(df, sample_field):
-    sec_in_week = 86400*7
-    df['DELTA'] = df[sample_field].diff().apply(lambda x: x / np.timedelta64(1, 's')).fillna(0).astype('int64')
-    df['DELTA'] = np.abs(df.DELTA)
-    hober_m, hober_s = hober_est(df['DELTA'], 500)
-    return [np.mean(df['DELTA']/sec_in_week),
-            np.std(df['DELTA']/sec_in_week),
-            hober_m/sec_in_week, hober_s/sec_in_week]
-
-
-def categories_ratio(df, cat_col, cat_len):
-    y = df.groupby(cat_col).agg({cat_col: ['count']})
-    used_cat = len(y)/cat_len
-    max_cat_ratio = np.max(y.values) / np.sum(y.values)
-    min_cat_ratio = np.min(y.values) / np.sum(y.values)
-    return [used_cat, max_cat_ratio, min_cat_ratio]
 
 
 class NightHours(object):
@@ -182,7 +168,9 @@ def outgoing_answered_rate(df ,data_col, dur_col, cat):
     return [float(ans/len(y))]
 
 
-def mean_time_callback(df, number_col, date_time_col, status_col):
-    df = df.loc[df[status_col] in ['MISSED', 'OUTGOING']]
-    y = df.groupby(number_col)
+def category_coverage(df, data_col, category_len):
+    cats = df.groupby(data_col).agg({data_col: ['count']})
+    installed_apps = np.sum(cats.values)
+    cov_ratio = len(cats)/category_len
+
 

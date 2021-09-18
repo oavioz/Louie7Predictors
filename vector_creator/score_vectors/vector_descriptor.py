@@ -31,13 +31,6 @@ def apps_installed_vector_descriptor(df, lat_long):
     app_cat = apps_installed['categories']
 
     vector_descriptor = [
-        #daily_func(df, sample_field=app_col[0], data_field=app_col[1], func='count', freq='M'),
-        #col_delta_stats_func(df=df, sample_field=app_col[0]),
-        [len(filter_day_hours(df, app_col[0], '07:00:00', '19:00:00'))/ len(df),
-        len(filter_day_hours(df, app_col[0], '19:00:00', '07:00:00'))/ len(df),
-        len(filter_by_weekends(df, lat_long, app_col[0], 'day_of_week'))/ len(df),
-        len(df[df[app_col[2]] == 'Paid Feature'])/ len(df)],
-        categories_ratio(df, app_col[1], len(app_cat)),
         entropy_of_cat(df=df, cat_col=app_col[1], categories=app_cat, fetcher_group='apps-installed')
     ]
     return list(chain.from_iterable(vector_descriptor))
