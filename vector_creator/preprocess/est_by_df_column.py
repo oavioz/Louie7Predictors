@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from vector_creator.preprocess import utils
-from vector_creator.stats_models.estimators import huber_est, qn
+from vector_creator.stats_models.estimators import huber_est
 
 
 '''
@@ -10,7 +10,7 @@ return a numpy array of tuple(mean, std) for specific timeframe (day)
 func in  [count , nunique, f]
 '''
 def daily_func(df, sample_field, data_field, func, freq):
-    r0 = [float(0), float(0), float(0), float(0), float(0)]
+    r0 = [float(0), float(0), float(0), float(0)]
     if df.empty:
         return r0
     x = df.groupby(pd.Grouper(key=sample_field, freq=freq)).agg({data_field : [func]})
@@ -26,9 +26,7 @@ def daily_func(df, sample_field, data_field, func, freq):
         print('huber est was not calculated -> value')
     except ZeroDivisionError:
         print('huber est was not calculated -> zero division')
-    except Exception:
-        print('huber est was not calculated -> invalid value')
-    return [np.mean(nz), np.std(nz), r_est[0], r_est[1], len(nz)/len(y)]
+    return [np.mean(nz), np.std(nz), r_est[0], r_est[1]]
 
 
 def burst_func(df, sample_field, data_field, func, freq1, freq2):
@@ -95,18 +93,19 @@ def daily_cont_event_by_cat(df, sample_field, cat_field, cat, data_field):
     return [np.mean(np_list), np.std(np_list)]
 
 
-class NightHours(object):
+class DailyHours(object):
     def __init__(self, sample_col):
         self.sample_col = sample_col
 
-    def __call__(self, df, data_col,  func='count'):  # count , nunique, f, size
+    def __call__(self, df, data_col, start_time, stop_time, func='count'):  # count , nunique, f, size
         df1 = df.set_index(self.sample_col)
-        df2 = df1.between_time('20:00:00', '08:00:00')
+        df2 = df1.between_time(start_time, stop_time) # ('20:00:00', '08:00:00')
         y = self.cont_stats_func(df2, data_col) if func == 'size' else self.daily_stats_func(df2, data_col, func)
         return y
 
-    def daily_stats_func(self, df, data_col, func):
-        r0 = [float(0), float(0), float(0)]
+    @staticmethod
+    def daily_stats_func(df, data_col, func):
+        r0 = [float(0), float(0), float(0), float(0)]
         if df.empty:
             return r0
         x = df.groupby(pd.Grouper(freq='D')).agg({data_col: [func]})
@@ -114,9 +113,18 @@ class NightHours(object):
         nz = y[y > 0]
         if not np.any(nz):
             return r0
-        return [np.mean(nz), np.std(nz), len(nz)/len(y)]
+        r_est = [np.mean(nz), np.std(nz)]
+        try:
+            h_est_mean, h_est_std = huber_est(nz)
+            r_est = [h_est_mean, h_est_std]
+        except ValueError:
+            print('huber est was not calculated -> value')
+        except ZeroDivisionError:
+            print('huber est was not calculated -> zero division')
+        return [np.mean(nz), np.std(nz), r_est[0], r_est[1]]
 
-    def cont_stats_func(self, df, data_col):
+    @staticmethod
+    def cont_stats_func(df, data_col):
         if df.empty:
             return [float(0), float(0)]
         ds = df.groupby(pd.Grouper(freq='D')).apply(lambda x: x.pivot_table(index=[data_col], aggfunc='size'))
@@ -124,25 +132,39 @@ class NightHours(object):
         return [np.mean(np_list), np.std(np_list)]
 
 
-class WeekendHours(object):
+class WeekDays(object):
     def __init__(self, df, datetime_col, long_lat_tuple):
         df1 = utils.filter_by_weekends(df, long_lat_tuple, datetime_col, 'day_of_week')
+        df2 = utils.filter_by_workdays(df, long_lat_tuple, datetime_col, 'day_of_week')
         self.datetime_col = datetime_col
-        self.df = df1
+        self.df1 = df1
+        self.df2 = df2
 
-    def weekend_count_func(self, data_col, func, freq):
-        r0 = [float(0), float(0), float(0)]
-        if self.df.empty:
+    def weekdays_count_func(self, df, data_col, func, freq):
+        r0 = [float(0), float(0), float(0), float(0)]
+        if df.empty:
             return r0
-        x = self.df.groupby(pd.Grouper(key=self.datetime_col, freq=freq)).agg({data_col: [func]})
+        x = df.groupby(pd.Grouper(key=self.datetime_col, freq=freq)).agg({data_col: [func]})
         y = x[data_col].values.T[0]
         nz = y[y > 0]
         if len(nz) == 0:
             return r0
-        return [np.mean(nz), np.std(nz), len(nz)/len(y)]
+        r_est = [np.mean(nz), np.std(nz)]
+        try:
+            h_est_mean, h_est_std = huber_est(nz)
+            r_est = [h_est_mean, h_est_std]
+        except ValueError:
+            print('huber est was not calculated -> value')
+        except ZeroDivisionError:
+            print('huber est was not calculated -> zero division')
+        return [np.mean(nz), np.std(nz), r_est[0], r_est[1]]
 
-    def __call__(self, data_col, freq, func='count'):
-        y = daily_cont_event(self.df, self.datetime_col, data_col) if func == 'size' else self.weekend_count_func(data_col, func, freq)
+    def __call__(self, data_col, freq, flag, func='count'):
+        if flag == 'weekend':
+            df = self.df1
+        else:
+            df = self.df2
+        y = daily_cont_event(df, self.datetime_col, data_col) if func == 'size' else self.weekdays_count_func(df, data_col, func, freq)
         return y
 
 
@@ -150,8 +172,8 @@ def call_response_rate(df, data_col, cat):
     dn = df.groupby(data_col).agg({data_col: ['count']})
     if len(dn) < 3:
         return [float()]
-    incoming = dn.loc[cat[0] : ].iloc[0]
-    missed = dn.loc[cat[2] : ].iloc[0]
+    incoming = dn.loc[cat[0]:].iloc[0]
+    missed = dn.loc[cat[2]:].iloc[0]
     if float(incoming+missed) == 0:
         return [float()]
     return [float(incoming/(incoming+missed))]
@@ -168,9 +190,6 @@ def outgoing_answered_rate(df ,data_col, dur_col, cat):
     return [float(ans/len(y))]
 
 
-def category_coverage(df, data_col, category_len):
-    cats = df.groupby(data_col).agg({data_col: ['count']})
-    installed_apps = np.sum(cats.values)
-    cov_ratio = len(cats)/category_len
-
-
+def category_coverage(df, data_col, categories):
+    unique_cat =  df[data_col].unique()
+    return unique_cat.size()/categories

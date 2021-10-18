@@ -1,6 +1,5 @@
 from vector_creator.preprocess.est_by_df_column import *
-from vector_creator.preprocess.utils import filter_day_hours, filter_by_weekends
-from vector_creator.preprocess.ivi_irregularity import IVI, IVI2, calc_ivi_number_by_cat
+from vector_creator.preprocess.ivi_irregularity import IVI2, calc_ivi_number_by_cat
 from vector_creator.preprocess.auto_regression import *
 from vector_creator.preprocess.entropy import *
 import numpy as np
@@ -44,22 +43,23 @@ def photo_gallery_vector_descriptor(df, lat_long):
     pg_col = photo_gallery['columns']
     pg_cat = photo_gallery['categories']
     #
-    night_h = NightHours(sample_col=pg_col[0])
-    weekend_h = WeekendHours(df, datetime_col=pg_col[0], long_lat_tuple=lat_long)
+    day_h = DailyHours(sample_col=pg_col[0])
+    week_d = WeekDays(df, datetime_col=pg_col[0], long_lat_tuple=lat_long)
     train, test = ar_count(df, pg_col[0], pg_col[1])
-    ivi_obj = IVI(pg_col[0], pg_col[1], 'D', 'W')
+    # ivi_obj = IVI(pg_col[0], pg_col[1], 'D', 'W')
     #
     vector_descriptor = [
         daily_func(df, sample_field=pg_col[0], data_field=pg_col[1], func='count', freq='D'),
-        burst_func(df, sample_field=pg_col[0], data_field=pg_col[1], func='count', freq1='1Min', freq2='W'),
-        night_h(df=df, data_col=pg_col[1], func='count'),
-        weekend_h(data_col=pg_col[1], freq='D', func='count'),
+        burst_func(df, sample_field=pg_col[0], data_field=pg_col[1], func='count', freq1='20S', freq2='W'),
+        day_h(df=df, data_col=pg_col[1], start_time='20:00:00', stop_time='08:00:00', func='count'),
+        day_h(df=df, data_col=pg_col[1], start_time='08:00:00', stop_time='20:00:00', func='count'),
+        week_d(data_col=pg_col[1], freq='D', flag='weekend' , func='count'),
+        week_d(data_col=pg_col[1], freq='D', flag='workdays', func='count'),
         ar(train, test, 1, True),
         ar(train, test, 2, True),
         ar(train, test, 4, True),
         entropy_of_cat(df, pg_col[1], pg_cat, 'photo-gallery'),
         entropy_of_amount(df=df, date_col=pg_col[0], cat_col=pg_col[1])
-        #ivi_obj(flag='number', df=df),
     ]
     return list(chain.from_iterable(vector_descriptor))
 
@@ -77,8 +77,8 @@ def call_logs_vector_descriptor(df, lat_long):
     cl_col = call_logs['columns']  # ['CALL_DATE_TIME', 'CALL_NUMBER', 'CALL_DURATION', 'CALL_TYPE']
     cl_cat = call_logs['categories']  # ['INCOMING', 'OUTGOING', 'MISSED']
 
-    night_h = NightHours(sample_col=cl_col[0])
-    weekend_h = WeekendHours(df, datetime_col=cl_col[0], long_lat_tuple=lat_long)
+    night_h = DailyHours(sample_col=cl_col[0])
+    weekend_h = WeekDays(df, datetime_col=cl_col[0], long_lat_tuple=lat_long)
     train_c, test_c = ar_count(df, cl_col[0], cl_col[1])
     train_d, test_d = ar_dur(df, cl_col[0], cl_col[2])
     ivi_obj = IVI2(cl_col[0], cl_col[2], cl_col[1], cl_col[3], 'D', 'W')
@@ -97,14 +97,14 @@ def call_logs_vector_descriptor(df, lat_long):
         daily_func_by_cat(df, sample_field=cl_col[0], data_field=cl_col[2], cat_field=cl_col[3], cat=cl_cat[1], func=f),
         daily_cont_event_by_cat(df, sample_field=cl_col[0], cat_field=cl_col[3], cat=cl_cat[1], data_field=cl_col[1]),
         daily_func_by_cat(df, sample_field=cl_col[0], data_field=cl_col[1], cat_field=cl_col[3], cat=cl_cat[2], func='count'),
-        night_h(df, data_col=cl_col[1], func='count'),
-        night_h(df, data_col=cl_col[1], func='nunique'),
-        night_h(df, data_col=cl_col[2], func=f),
-        night_h(df, data_col=cl_col[1], func='size'),
-        weekend_h(data_col=cl_col[1], freq='D', func='count'),
-        weekend_h(data_col=cl_col[1], freq='D', func='nunique'),
-        weekend_h(data_col=cl_col[2], freq='D', func=f),
-        weekend_h(data_col=cl_col[1], freq='D', func='size'),
+        night_h(df, data_col=cl_col[1], start_time='20:00:00', stop_time='08:00:00', func='count'),
+        night_h(df, data_col=cl_col[1], start_time='20:00:00', stop_time='08:00:00', func='nunique'),
+        night_h(df, data_col=cl_col[2], start_time='20:00:00', stop_time='08:00:00', func=f),
+        night_h(df, data_col=cl_col[1], start_time='20:00:00', stop_time='08:00:00', func='size'),
+        weekend_h(data_col=cl_col[1], freq='D', flag='weekend', func='count'),
+        weekend_h(data_col=cl_col[1], freq='D', flag='weekend', func='nunique'),
+        weekend_h(data_col=cl_col[2], freq='D', flag='weekend', func=f),
+        weekend_h(data_col=cl_col[1], freq='D', flag='weekend', func='size'),
         call_response_rate(df, cl_col[3], cl_cat),
         outgoing_answered_rate(df, cl_col[3], cl_col[2], cl_cat),
         entropy_of_duration(df, cl_col[2], cl_col[3], cat='None'),
