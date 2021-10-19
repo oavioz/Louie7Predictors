@@ -23,7 +23,7 @@ return :
 vector_len = {'call_logs' : len(vector_desc_call_logs),
               'photo_gallery' : len(vector_desc_photo_gallery),
               'install_apps' : len(vector_desc_installed_apps)}
-thd = {'call_logs' : 300, 'photo_gallery' : 500, 'install_apps' : 30, 'sample_days' : 30}
+thd = {'call_logs' : 300, 'photo_gallery' : 400, 'install_apps' : 30, 'sample_days' : 30}
 
 
 '''
@@ -43,7 +43,7 @@ def create_app_install_vector(uid, df_dict, lat_long):
     return score_vec
 
 
-def create_score_vector_for_uid(uid, df_dict, lat_long):
+def create_image_gallery_vector(uid, df_dict, lat_long):
     key = uid + '_ImgMetaData'
     df = df_dict.get(key) if key in df_dict.keys() else pd.DataFrame({'empty' : []})
     score_vec = [0] * vector_len['photo_gallery'] #+ vector_len['install_apps'])
@@ -91,7 +91,7 @@ def run_score_vector(uid, raw_data, flag):
         if flag == 'call-logs':
             score_vector = score_vector_for_init_metadata(uid, uid_df_dict, loc_tuple)
         else: #elif flag == 'others':
-            score_vector = create_score_vector_for_uid(uid, uid_df_dict, loc_tuple)
+            score_vector = create_image_gallery_vector(uid, uid_df_dict, loc_tuple)
         s = '-> processed' if score_vector.any() else '-> to small to process'
         print(s)
     else:
