@@ -1,10 +1,11 @@
-import scipy.stats as cpy
+from scipy.stats import entropy
 import numpy as np
 from statsmodels.robust.scale import qn_scale, Huber, mad
 from statsmodels.tsa.ar_model import AutoReg
 from statsmodels.tsa.stattools import kpss
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 from statsmodels.regression.linear_model import yule_walker
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 '''
 def skew(input_vector):
@@ -16,13 +17,22 @@ def kurtosis(input_vector):
 
 '''
 
+def minmax_scale(X):
+    scalar = MinMaxScaler()
+    scalar.fit(X)
+    return scalar.transform(X)
 
-def entropy(input_vector):
+def z_score(X):
+    std_scalar = StandardScaler()
+    return std_scalar.fit_transform(X)
+
+
+def calc_entropy(input_vector):
     acc = np.sum(input_vector)
     if acc < 1.0e-03:
-        return -1.0
+        return float(-1)
     prob_vec = list(map(lambda x: float(x/acc), input_vector))
-    return cpy.entropy(prob_vec, base=2, axis=0)
+    return entropy(prob_vec, base=2, axis=0)
 
 
 '''
@@ -46,21 +56,27 @@ def ivi_irregularity(ivi_matrix):
 
 
 
-def hober_m(data_set, n):
-    huber = Huber(maxiter=n)(data_set)
-    return [huber[0].item(0), huber[1].item(0)]
+def huber_m(data_set, n=300):
+    huber = data_set.apply(lambda x: Huber(maxiter=n)(x)[0].item(0))
+    return huber
+
+
+def huber_est(vector, n=300):
+    huber = Huber(maxiter=n)(vector)
+    return huber[0].item(0), huber[1].item(0)
+
 
 
 def qn(data_set):
     if len(data_set) < 7 and np.count_nonzero(data_set) == 0:
-        return [-1.0]
-    return [qn_scale(data_set)]
+        return np.mean(data_set)
+    return qn_scale(data_set)
 
 
 def mad_calc(data):
-    if len(data) < 7 and np.count_nonzero(data) == 0:
-        return [-1.0]
-    return [mad(data)]
+    if np.count_nonzero(data) == 0:
+        return [0.0]
+    return mad(data)
 
 
 

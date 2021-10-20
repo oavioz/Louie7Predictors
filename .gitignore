@@ -1,0 +1,21 @@
+
+# project files
+.idea/*
+vector_creator.egg-info/*
+vector_creator/__pycache__/*
+vector_creator/raw_to_df/__pycache__/*
+vector_creator/stats_models/__pycache__/*
+vector_creator/preprocess/__pycache__/*
+vector_creator/score_vectors/__pycache__/*
+.ipynb_checkpoints/*
+
+# general folders
+venv
+Notebooks
+vector_creator.egg-info
+
+# ios
+.DS_Store
+._.DS_Store
+
+
