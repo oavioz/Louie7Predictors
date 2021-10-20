@@ -39,7 +39,9 @@ def create_app_install_vector(uid, df_dict, lat_long):
     print('install_apps: ', len(df))
     if not df.empty:
         df0 = df.sort_values('INSTALL_DATETIME')
-        score_vec = apps_installed_vector_descriptor(df=df0, lat_long=lat_long)
+        mask1 = len(df0) > thd['install_apps']
+        if mask1:
+            score_vec = apps_installed_vector_descriptor(df=df0, lat_long=lat_long)
     return score_vec
 
 
@@ -87,7 +89,7 @@ def run_score_vector(uid, raw_data, flag):
     score_vector = [0] * vector_len['call_logs'] if flag == 'call_logs' else [0] * vector_len['photo_gallery'] # + vector_len['install_apps'])
     loc_dict, uid_df_dict = create_df_from_init_metadata(uid=uid, raw_data_json=raw_data)
     if not 'empty' in uid_df_dict.keys():
-        loc_tuple = (loc_dict[0]['Latitude'], loc_dict[0]['Longitude']) if loc_dict[0] and loc_dict[0]['Latitude'] and loc_dict[0]['Longitude'] else (-1.0, -1.0)
+        loc_tuple = (loc_dict[0]['Latitude'], loc_dict[0]['Longitude'])  # if loc_dict[0] and loc_dict[0]['Latitude'] and loc_dict[0]['Longitude'] else (-1.0, -1.0)
         if flag == 'call-logs':
             score_vector = score_vector_for_init_metadata(uid, uid_df_dict, loc_tuple)
         else: #elif flag == 'others':

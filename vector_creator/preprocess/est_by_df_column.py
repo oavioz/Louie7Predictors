@@ -26,6 +26,8 @@ def daily_func(df, sample_field, data_field, func, freq):
         print('huber est was not calculated -> value')
     except ZeroDivisionError:
         print('huber est was not calculated -> zero division')
+    except:
+        print('huber est was not calculated')
     return [np.mean(nz), np.std(nz), r_est[0], r_est[1]]
 
 
@@ -60,6 +62,8 @@ def daily_cont_event(df, sample_field, data_field):
         r_est = [h_est_mean, h_est_std]
     except ValueError:
         print('huber est was not calculated')
+    except ZeroDivisionError:
+        print('huber est was not calculated')
     return [np.mean(nz.values), np.std(nz.values), r_est[0], r_est[1]]
 
 #func in  [count , nunique, f]
@@ -77,6 +81,8 @@ def daily_func_by_cat(df, sample_field, data_field, cat_field, cat, func):
     try:
         r_est = huber_est(nz)[0]
     except ValueError:
+        print('huber est was not calculated')
+    except ZeroDivisionError:
         print('huber est was not calculated')
     return [np.mean(nz), r_est]
 
@@ -121,6 +127,8 @@ class DailyHours(object):
             print('huber est was not calculated -> value')
         except ZeroDivisionError:
             print('huber est was not calculated -> zero division')
+        except:
+            print('huber est was not calculated')
         return [np.mean(nz), np.std(nz), r_est[0], r_est[1]]
 
     @staticmethod
@@ -157,6 +165,8 @@ class WeekDays(object):
             print('huber est was not calculated -> value')
         except ZeroDivisionError:
             print('huber est was not calculated -> zero division')
+        except:
+            print('huber est was not calculated')
         return [np.mean(nz), np.std(nz), r_est[0], r_est[1]]
 
     def __call__(self, data_col, freq, flag, func='count'):
