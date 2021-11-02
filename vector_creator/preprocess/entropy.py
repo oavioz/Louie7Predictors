@@ -51,3 +51,13 @@ def entropy_of_cat(df, cat_col, categories, fetcher_group):
     if len(z) == 0:
         return [float(-1)]
     return [est.calc_entropy(y)]
+
+
+def entropy_by_time(df, dt_col, freq):
+    x0 = df.groupby(pd.Grouper(key=dt_col, freq=freq))[dt_col].agg('count')
+    x1 = x0.to_frame()
+    x1 = x1.rename(columns={dt_col: 'Count'})
+    x1['INSTALL_T'] = x1.index
+    x1['INSTALL_T'] = x1['INSTALL_T'].dt.hour
+    y = x1.groupby('INSTALL_T')['Count'].agg('sum').values
+    return [est.calc_entropy(y)]

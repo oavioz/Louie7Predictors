@@ -82,28 +82,20 @@ vector_desc_call_logs = [
 ]
 
 vector_desc_photo_gallery = [
-    'mean daily number photos',
-    'std daily number photos',
-    'huber mean daily number photos',
-    'huber std daily number photos',
+    'median daily number photos - location',
+    'mad daily number photos - scale',
     'mean number of photos in burst',
-    'mean number of bursts a week',
-    'mean night time number photos',
-    'std night time number photos',
-    'huber mean night time number photos',
-    'huber std night time number photos',
-    'mean day time number photos',
-    'std day time number photos',
-    'huber mean day time number photos',
-    'huber std day time number photos',
-    'mean weekend number photos',
-    'std weekend number photos',
-    'huber mean weekend number photos',
-    'huber std weekend number photos',
-    'mean work days number photos',
-    'std work days number photos',
-    'huber mean work days number photos',
-    'huber std work days number photos',
+    'median number of photos in burst',
+    'median number of bursts a week',
+    'mad number of bursts a week',
+    'median night time number photos',
+    'mad night time number photos',
+    'median day time number photos',
+    'mad day time number photos',
+    'median weekend number photos',
+    'mad weekend number photos',
+    'median work days number photos',
+    'mad work days number photos',
     'ar daily num of photos lag-1',
     'ar daily num of photos lag-2',
     'ar daily num of photos lag-4',
@@ -112,14 +104,9 @@ vector_desc_photo_gallery = [
 ]
 
 vector_desc_installed_apps = [
+    'mean max ratio of category of installed apps',
+    'median max ratio of category of installed apps',
+    'app category coverage ratio',
     'entropy of app categories',
     'entropy of install app time of day'
-    'total number of installed apps',
-    'mean of number of installed apps per category'
-    'median of number of installed apps per category'
-    'app category coverage ratio',
-    'ratio of paid apps',
-    'ar-1 install app by category',
-    'ar-4 install app by category',
-    'category of installed apps density func'
 ]

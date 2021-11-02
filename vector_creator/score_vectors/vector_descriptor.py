@@ -1,4 +1,5 @@
 from vector_creator.preprocess.est_by_df_column import *
+from vector_creator.preprocess.install_apps_features import *
 from vector_creator.preprocess.ivi_irregularity import IVI2, calc_ivi_number_by_cat
 from vector_creator.preprocess.auto_regression import *
 from vector_creator.preprocess.entropy import *
@@ -25,12 +26,16 @@ apps_installed = {'categories':
 
 
 
-def apps_installed_vector_descriptor(df, lat_long):
+def apps_installed_vector_descriptor(df):
     app_col = apps_installed['columns']
     app_cat = apps_installed['categories']
 
     vector_descriptor = [
-        entropy_of_cat(df=df, cat_col=app_col[1], categories=app_cat, fetcher_group='apps-installed')
+        mean_max_ratio(df, data_col=app_col[1]),
+        category_coverage(df, data_col=app_col[1], categories=len(app_cat)),
+        #ratio_of_paid_apps(df, data_col=app_col[2], paid_str='Paid Feature'),
+        entropy_of_cat(df=df, cat_col=app_col[1], categories=app_cat, fetcher_group='apps-installed'),
+        entropy_by_time(df=df, dt_col=app_col[0], freq='3H')
     ]
     return list(chain.from_iterable(vector_descriptor))
 
