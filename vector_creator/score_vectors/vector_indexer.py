@@ -97,9 +97,6 @@ vector_desc_photo_gallery = [
     'median work days number photos',
     'mad work days number photos',
     'ar daily num of photos lag-1',
-    'ar daily num of photos lag-2',
-    'ar daily num of photos lag-4',
-    'entropy on photo category',
     'entropy on daily photos'
 ]
 

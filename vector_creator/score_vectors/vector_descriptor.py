@@ -61,9 +61,9 @@ def photo_gallery_vector_descriptor(df, lat_long):
         week_d(data_col=pg_col[1], freq='D', flag='weekend' , func='count'),
         week_d(data_col=pg_col[1], freq='D', flag='workdays', func='count'),
         ar(train, test, 1, True),
-        ar(train, test, 2, True),
-        ar(train, test, 4, True),
-        entropy_of_cat(df, pg_col[1], pg_cat, 'photo-gallery'),
+        #ar(train, test, 2, True),
+        #ar(train, test, 4, True),
+        #entropy_of_cat(df, pg_col[1], pg_cat, 'photo-gallery'),
         entropy_of_amount(df=df, date_col=pg_col[0], cat_col=pg_col[1])
     ]
     return list(chain.from_iterable(vector_descriptor))
