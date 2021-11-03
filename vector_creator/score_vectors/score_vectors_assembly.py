@@ -143,7 +143,7 @@ def score_vector_from_bucket(object_storage_client, flag, start_str):
     if flag == 'call-logs':
         df0['description'] = vector_desc_call_logs  # + vector_desc_photo_gallery + vector_desc_installed_apps
     else: #elif flag == 'photo-gallery':
-        df0['description'] = vector_desc_photo_gallery #+ vector_desc_installed_apps
+        df0['description'] = vector_desc_photo_gallery + vector_desc_installed_apps
     dft = df0.set_index('description').transpose()
     print(dft.shape)
     return dft
