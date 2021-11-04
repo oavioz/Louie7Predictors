@@ -1,11 +1,11 @@
-from scipy.stats import entropy
+from scipy.stats import entropy, zscore
 import numpy as np
 from statsmodels.robust.scale import qn_scale, Huber, mad
 from statsmodels.tsa.ar_model import AutoReg
 from statsmodels.tsa.stattools import kpss
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 from statsmodels.regression.linear_model import yule_walker
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
+from sklearn.preprocessing import MinMaxScaler
 
 '''
 def skew(input_vector):
@@ -23,8 +23,7 @@ def minmax_scale(X):
     return scalar.transform(X)
 
 def z_score(X):
-    std_scalar = StandardScaler()
-    return std_scalar.fit_transform(X)
+    return zscore(X, axis=1, ddof=1)
 
 
 def calc_entropy(input_vector):

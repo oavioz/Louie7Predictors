@@ -147,10 +147,3 @@ def score_vector_from_bucket(object_storage_client, flag, start_str):
     dft = df0.set_index('description').transpose()
     print(dft.shape)
     return dft
-
-
-def normalize_scores(df, method):
-    df_scale = df.transpose()
-    if len(df) > 20:
-        df_scale =  z_score(df_scale) if method == 'z-score' else minmax_scale(df_scale) # 'minmax'
-    return df_scale.transpose()

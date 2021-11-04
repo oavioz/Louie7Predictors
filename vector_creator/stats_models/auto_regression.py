@@ -12,7 +12,7 @@ def ar_dur(df, datetime_col, dur_col, t_size=3):
     nz = y[y > 0]
     if not np.any(nz):
         return [float(-1)]
-    return nz[0:len(nz) - t_size], nz[len(nz) - t_size:]
+    return y[0:len(y) - t_size], y[len(y) - t_size:]
 
 
 def ar_count(df, datetime_col, num_col, t_size=3):
@@ -21,7 +21,7 @@ def ar_count(df, datetime_col, num_col, t_size=3):
     nz = y[y > 0]
     if not np.any(nz):
         return [float(-1)]
-    return nz[0:len(nz) - t_size], nz[len(nz) - t_size:]
+    return y[0:len(y) - t_size], y[len(y) - t_size:]
 
 
 
