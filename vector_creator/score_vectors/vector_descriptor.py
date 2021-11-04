@@ -1,8 +1,8 @@
 from vector_creator.preprocess.est_by_df_column import *
 from vector_creator.preprocess.install_apps_features import *
-from vector_creator.preprocess.ivi_irregularity import IVI2, calc_ivi_number_by_cat
-from vector_creator.preprocess.auto_regression import *
-from vector_creator.preprocess.entropy import *
+from vector_creator.stats_models.ivi_irregularity import IVI2, calc_ivi_number_by_cat
+from vector_creator.stats_models.auto_regression import *
+from vector_creator.stats_models.entropy import *
 import numpy as np
 from itertools import chain
 
@@ -64,7 +64,7 @@ def photo_gallery_vector_descriptor(df, lat_long):
         #ar(train, test, 2, True),
         #ar(train, test, 4, True),
         #entropy_of_cat(df, pg_col[1], pg_cat, 'photo-gallery'),
-        entropy_of_amount(df=df, date_col=pg_col[0], cat_col=pg_col[1])
+        entropy_of_action(df=df, date_col=pg_col[0], cat_col=pg_col[1])
     ]
     return list(chain.from_iterable(vector_descriptor))
 

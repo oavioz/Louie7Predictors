@@ -34,9 +34,13 @@ def filter_by_workdays(df, lat_long, datetime_col, col_name):
 
 
 def get_weekdays_by_loc(lat, long, flag):
-    geolocator = Nominatim(user_agent='Louie7ai')
-    location =  geolocator.reverse([lat, long], exactly_one=True, language='en')
-    country = location.raw['address'].get('country')
+    country = 'Albania'
+    try:
+        geolocator = Nominatim(user_agent='Louie7ai')
+        location =  geolocator.reverse([lat, long], exactly_one=True, language='en')
+        country = location.raw['address'].get('country')
+    except Exception:
+        print('geo location server not responding !!!')
     week_days = week_days_by_country(country)
     return  week_days.get(flag)
 

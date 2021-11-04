@@ -23,7 +23,7 @@ def daily_func(df, sample_field, data_field, func, freq):
 
 
 def burst_func(df, sample_field, data_field, func, freq1, freq2):
-    r0 = [float(0), float(0), float(0), float(0)]
+    r0 = [float(0), float(0), float(0)]
     if df.empty:
         return r0
     x = df.groupby(pd.Grouper(key=sample_field, freq=freq1)).agg({data_field: [func]})
@@ -32,12 +32,12 @@ def burst_func(df, sample_field, data_field, func, freq1, freq2):
         return r0
     y.reset_index(level=0, inplace=True)
     y.columns = y.columns.get_level_values(0)
-    z = y.groupby(pd.Grouper(key=sample_field, freq=freq2)).agg({data_field: [func]})
-    median_y = np.median(y[data_field].values)
+    z0 = y.loc[(y[data_field] >= 2)]
+    z = z0.groupby(pd.Grouper(key=sample_field, freq=freq2)).agg({data_field: [func]}) if len(z0) > 0 else []
     mean_y = np.mean(y[data_field].values)
-    median_z = np.median(z.values.T[0]) if len(z) > 0 else float(0)
-    mad_z = mad_calc(z.values.T[0])
-    return [mean_y, median_y, median_z, mad_z]
+    median_z = np.median(z.values.T[0]) if len(z) > 0 else float(-1)
+    mean_z = np.mean(z.values.T[0]) if len(z) > 0 else float(-1)
+    return [mean_y, mean_z, median_z]
 
 
 # Mean and Std of continuous event (same event that happens one after the other)
