@@ -84,19 +84,24 @@ vector_desc_call_logs = [
 vector_desc_photo_gallery = [
     'median daily number photos - location',
     'mad daily number photos - scale',
+    'days with photo - total sample days ratio',
     'mean number of photos in burst',
     'mean number of bursts a week',
     'median number of bursts a week',
     'median night time number photos',
     'mad night time number photos',
+    'night time with photo - total sample days ratio',
     'median day time number photos',
     'mad day time number photos',
+    'day time with photo - total sample days ratio',
     'median weekend number photos',
     'mad weekend number photos',
+    'weekends with photo - total sample days ratio',
     'median work days number photos',
     'mad work days number photos',
+    'weekdays with photo - total sample days ratio',
     'ar daily num of photos lag-1',
-    'entropy on daily photos'
+    'entropy on photos taken in day'
 ]
 
 vector_desc_installed_apps = [

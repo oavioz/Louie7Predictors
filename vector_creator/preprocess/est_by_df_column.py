@@ -10,7 +10,7 @@ return a numpy array of tuple(mean, std) for specific timeframe (day)
 func in  [count , nunique, f]
 '''
 def daily_func(df, sample_field, data_field, func, freq):
-    r0 = [float(0), float(0)]
+    r0 = [float(0), float(0), float(0)]
     if df.empty:
         return r0
     x = df.groupby(pd.Grouper(key=sample_field, freq=freq)).agg({data_field : [func]})
@@ -18,7 +18,7 @@ def daily_func(df, sample_field, data_field, func, freq):
     nz = y[y > 0]
     if len(nz) == 0:
         return r0
-    return [np.median(nz), mad_calc(nz)]
+    return [np.median(nz), mad_calc(nz), float(len(nz)/len(y))]
 
 
 
@@ -65,7 +65,7 @@ class DailyHours(object):
 
     @staticmethod
     def daily_stats_func(df, data_col, func):
-        r0 = [float(0), float(0)]
+        r0 = [float(0), float(0), float(0)]
         if df.empty:
             return r0
         x = df.groupby(pd.Grouper(freq='D')).agg({data_col: [func]})
@@ -73,7 +73,7 @@ class DailyHours(object):
         nz = y[y > 0]
         if not np.any(nz):
             return r0
-        return [np.median(nz), mad_calc(nz)]
+        return [np.median(nz), mad_calc(nz), float(len(nz)/len(y))]
 
     @staticmethod
     def cont_stats_func(df, data_col):
@@ -93,7 +93,7 @@ class WeekDays(object):
         self.df2 = df2
 
     def weekdays_count_func(self, df, data_col, func, freq):
-        r0 = [float(0), float(0)]
+        r0 = [float(0), float(0), float(0)]
         if df.empty:
             return r0
         x = df.groupby(pd.Grouper(key=self.datetime_col, freq=freq)).agg({data_col: [func]})
@@ -101,7 +101,7 @@ class WeekDays(object):
         nz = y[y > 0]
         if len(nz) == 0:
             return r0
-        return [np.median(nz), mad_calc(nz)]
+        return [np.median(nz), mad_calc(nz), float(len(nz)/len(y))]
 
 
     def __call__(self, data_col, freq, flag, func='count'):
