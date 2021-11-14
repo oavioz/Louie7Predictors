@@ -8,6 +8,7 @@ vector_creator/stats_models/__pycache__/*
 vector_creator/preprocess/__pycache__/*
 vector_creator/score_vectors/__pycache__/*
 .ipynb_checkpoints/*
+entries.json
 
 # general folders
 venv

@@ -19,7 +19,14 @@ df_cont_fields = [('ScreenInfo', 'Sampling_Collect_Time'),
                   ('ActiveAppSamplingInfo', 'ActiveAppSamplingTime')]
 
 
-min_file_size = 8192
+
+#read the tags from json file for user register non register and create df with tag column
+def create_tag_df(json_file_path, column_name): # 'entries.json'
+    tag_data = json.load(codecs.open(json_file_path, 'r', 'utf-8-sig'))
+    df_tag = pd.DataFrame(tag_data)
+    df_tag = df_tag.rename(columns={column_name: ''}) # 'app_userid'
+    dftag = df_tag.set_index('')
+    return dftag
 
 
 def group_metadata(path):

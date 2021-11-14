@@ -48,20 +48,18 @@ def photo_gallery_vector_descriptor(df, lat_long):
     pg_col = photo_gallery['columns']
     pg_cat = photo_gallery['categories']
     #
-    day_h = DailyHours(sample_col=pg_col[0])
-    week_d = WeekDays(df, datetime_col=pg_col[0], long_lat_tuple=lat_long)
-    train, test = ar_count(df, pg_col[0], pg_col[1])
+    day_h = DailyHours(sample_col=pg_col[0], freq='W')
+    week_d = WeekDays(df, datetime_col=pg_col[0], long_lat_tuple=lat_long, freq='W')
+    #train, test = ar_count(df, pg_col[0], pg_col[1])
     # ivi_obj = IVI(pg_col[0], pg_col[1], 'D', 'W')
     #
     vector_descriptor = [
-        daily_func(df, sample_field=pg_col[0], data_field=pg_col[1], func='count', freq='D'),
-        burst_func(df, sample_field=pg_col[0], data_field=pg_col[1], func='count', freq1='20S', freq2='W'),
+        daily_func(df, sample_field=pg_col[0], data_field=pg_col[1], func='count', freq='W'),
+        burst_func(df, sample_field=pg_col[0], data_field=pg_col[1], func='count', freq1='30S', freq2='W', filter_by_hours=False),
         day_h(df=df, data_col=pg_col[1], start_time='20:00:00', stop_time='08:00:00', func='count'),
         day_h(df=df, data_col=pg_col[1], start_time='08:00:00', stop_time='20:00:00', func='count'),
-        week_d(data_col=pg_col[1], freq='D', flag='weekend' , func='count'),
-        week_d(data_col=pg_col[1], freq='D', flag='workdays', func='count'),
-        ar(train, test, 1, True),
-        entropy_of_event(df=df, date_col=pg_col[0], cat_col=pg_col[1])
+        week_d(data_col=pg_col[1], flag='weekend' , func='count'),
+        week_d(data_col=pg_col[1], flag='workdays', func='count')
     ]
     return list(chain.from_iterable(vector_descriptor))
 

@@ -1,4 +1,5 @@
 from scipy.stats import entropy, zscore
+from sklearn import preprocessing
 import numpy as np
 from statsmodels.robust.scale import qn_scale, Huber, mad
 from statsmodels.tsa.ar_model import AutoReg
@@ -22,8 +23,14 @@ def minmax_scale(X):
     scalar.fit(X)
     return scalar.transform(X)
 
+
 def z_score(X):
-    return zscore(X, axis=1, ddof=1)
+    return zscore(X, axis=0, ddof=1)
+
+
+def z_score_2(X):
+    std_scale = preprocessing.StandardScaler().fit(X)
+    return std_scale.transform(X)
 
 
 def calc_entropy(input_vector):
@@ -90,6 +97,7 @@ def kpss_trend_test(data):
 def yule_walker_test(data, order, yw_method='mle'):
     rho, sigma = yule_walker(data, order, method = yw_method)
     return rho, sigma
+
 
 def ar_model(train, test, lag):   # train , test : numpy.ndarray
     # p_value  dicky_fuller_test hypotesis

@@ -11,14 +11,6 @@ def entropy_of_duration(df, dur_col, cat_col, cat):
     return [est.calc_entropy(y0)]
 
 
-def entropy_of_event(df, date_col, cat_col):
-    x = df.groupby(pd.Grouper(key=date_col, freq='D')).agg({cat_col: ['count']})
-    y = x[cat_col].values.T[0]
-    nz = y[y > 0]
-    if not np.any(nz):
-        return [float(-1)]
-    return [est.calc_entropy(nz)]
-
 # for call_logs, freq column is phone numbers
 def entropy_of_freq(df, freq_col, cat_col, cat):
     df['HOUR'] = df[freq_col].dt.hour

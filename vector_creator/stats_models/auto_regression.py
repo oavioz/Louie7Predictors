@@ -26,7 +26,7 @@ def ar_count(df, datetime_col, num_col, t_size=3):
 
 
 def ar(train, test, lag, mse):
-    return [est.ar_model_2(train=train, test=test, lag=lag, mse=mse)] if len(train) >= 30 else [float(-1)]
+    return est.ar_model_2(train=train, test=test, lag=lag, mse=mse) if len(train) >= 30 else float(-1)
 
 
 def adfuller_test(train):
