@@ -114,7 +114,7 @@ vector_desc_photo_gallery = [
     'entropy on number of photos taken in weekdays',
     'ar of num of photos in weekdays lag-1',
     'mean number of photos in burst at weekdays',
-    'mean number of bursts in weekdays',
+    'mean number of bursts in weekdays'
 ]
 
 

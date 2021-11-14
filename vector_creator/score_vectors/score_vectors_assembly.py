@@ -49,7 +49,7 @@ def create_image_gallery_vector(uid, df_dict, lat_long):
     key = uid + '_ImgMetaData'
     df = df_dict.get(key) if key in df_dict.keys() else pd.DataFrame({'empty' : []})
     score_vec = [0] * vector_len['photo_gallery'] #+ vector_len['install_apps'])
-    print('photo-gallery: ', len(df))
+    #print('photo-gallery: ', len(df))
     if not df.empty:
         df0 = df.sort_values('IMAGE_DATE_TIME')
         df0 = df0.reset_index(drop=True)
@@ -60,7 +60,7 @@ def create_image_gallery_vector(uid, df_dict, lat_long):
             mask0 = float(n_nan / len(df)) < 0.5
             #app_vector = create_app_install_vector(uid, df_dict)
             score_vec = photo_gallery_vector_descriptor(df=df0,lat_long=lat_long) if mask0 else score_vec
-    return pd.Series(score_vec, name=uid)
+    return len(df), pd.Series(score_vec, name=uid)
 
 
 def score_vector_for_init_metadata(uid, df_dict, lat_long):
@@ -85,17 +85,18 @@ def score_vector_for_init_metadata(uid, df_dict, lat_long):
 
 
 def run_score_vector(uid, raw_data, flag):
-    print(uid)
+    #print(uid)
     score_vector = [0] * vector_len['call_logs'] if flag == 'call_logs' else [0] * vector_len['photo_gallery'] # + vector_len['install_apps'])
+    l = 0
     loc_dict, uid_df_dict = create_df_from_init_metadata(uid=uid, raw_data_json=raw_data)
     if not 'empty' in uid_df_dict.keys():
         loc_tuple = (loc_dict[0]['Latitude'], loc_dict[0]['Longitude'])  # if loc_dict[0] and loc_dict[0]['Latitude'] and loc_dict[0]['Longitude'] else (-1.0, -1.0)
         if flag == 'call-logs':
             score_vector = score_vector_for_init_metadata(uid, uid_df_dict, loc_tuple)
         else: #elif flag == 'others':
-            score_vector = create_image_gallery_vector(uid, uid_df_dict, loc_tuple)
-        s = '-> processed' if score_vector.any() else '-> to small to process'
-        print(s)
+            l, score_vector = create_image_gallery_vector(uid, uid_df_dict, loc_tuple)
+        s = '-> processed' if score_vector.any() else '-> data to small to process'
+        print(s + ' -> ' +  str(l))
     else:
         score_vector = pd.Series(score_vector, name=uid)
         print('-> json to small to process')
@@ -137,8 +138,8 @@ def score_vector_from_bucket(object_storage_client, flag, start_str):
             vscore = run_score_vector(uid=uid, raw_data=raw_data, flag=flag)
             if vscore.any():
                 score_vector_dict[vscore.name] = vscore
-            counter = counter + 1
-            print(counter)
+            #counter = counter + 1
+            # print(counter)
     df0 = pd.concat(score_vector_dict, axis=1)
     if flag == 'call-logs':
         df0['description'] = vector_desc_call_logs
