@@ -3,7 +3,6 @@ from vector_creator.raw_to_df.load_oci_bucket import namespace, bucket_name
 from vector_creator.score_vectors.vector_descriptor import *
 from vector_creator.score_vectors.vector_indexer import *
 from vector_creator.preprocess.utils import calc_number_of_days
-from vector_creator.stats_models.estimators import minmax_scale , z_score
 import pandas as pd
 import numpy as np
 import os
@@ -138,8 +137,9 @@ def score_vector_from_bucket(object_storage_client, flag, start_str):
             vscore = run_score_vector(uid=uid, raw_data=raw_data, flag=flag)
             if vscore.any():
                 score_vector_dict[vscore.name] = vscore
-            #counter = counter + 1
-            # print(counter)
+            counter = counter + 1
+            if counter % 100 == 0:
+                print("counter : " + str(counter))
     df0 = pd.concat(score_vector_dict, axis=1)
     if flag == 'call-logs':
         df0['description'] = vector_desc_call_logs

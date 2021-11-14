@@ -1,5 +1,3 @@
-import pandas as pd
-import numpy as np
 from vector_creator.preprocess import utils
 from vector_creator.stats_models.auto_regression import *
 from vector_creator.stats_models.estimators import huber_est, mad_calc, calc_entropy
@@ -25,7 +23,7 @@ def daily_func(df, sample_field, data_field, func, freq):
 
 
 def burst_func(df, sample_field, data_field, func, freq1, freq2, filter_by_hours):
-    r0 = [float(0), float(0), float(0)]
+    r0 = [float(0), float(0)]
     if df.empty:
         return r0
     x = df.groupby(pd.Grouper(freq=freq1)).agg({data_field: [func]}) if filter_by_hours else df.groupby(pd.Grouper(key=sample_field, freq=freq1)).agg({data_field: [func]})
@@ -37,7 +35,6 @@ def burst_func(df, sample_field, data_field, func, freq1, freq2, filter_by_hours
     z0 = y.loc[(y[data_field] >= 2)]
     z = z0.groupby(pd.Grouper(key=sample_field, freq=freq2)).agg({data_field: [func]}) if len(z0) > 0 else []
     mean_y = np.mean(y[data_field].values)
-    #median_z = np.median(z.values.T[0]) if len(z) > 0 else float(-1)
     mean_z = np.mean(z.values.T[0]) if len(z) > 0 else float(-1)
     return [mean_y, mean_z]
 
