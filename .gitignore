@@ -12,7 +12,6 @@ entries.json
 
 # general folders
 venv
-Notebooks
 vector_creator.egg-info
 
 # ios

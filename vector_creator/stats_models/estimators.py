@@ -6,7 +6,7 @@ from statsmodels.tsa.ar_model import AutoReg
 from statsmodels.tsa.stattools import kpss
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 from statsmodels.regression.linear_model import yule_walker
-from sklearn.preprocessing import MinMaxScaler
+
 
 '''
 def skew(input_vector):
@@ -19,7 +19,7 @@ def kurtosis(input_vector):
 '''
 
 def minmax_scale(X):
-    scalar = MinMaxScaler()
+    scalar = preprocessing.MinMaxScaler()
     scalar.fit(X)
     return scalar.transform(X)
 
@@ -29,7 +29,8 @@ def z_score(X):
 
 
 def z_score_2(X):
-    std_scale = preprocessing.StandardScaler().fit(X)
+    std_scale = preprocessing.StandardScaler()
+    std_scale.fit(X)
     return std_scale.transform(X)
 
 
