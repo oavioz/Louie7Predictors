@@ -48,13 +48,13 @@ def photo_gallery_vector_descriptor(df, lat_long):
     pg_col = photo_gallery['columns']
     pg_cat = photo_gallery['categories']
     #
-    day_h = DailyHours(sample_col=pg_col[0], freq='W')
-    week_d = WeekDays(df, datetime_col=pg_col[0], long_lat_tuple=lat_long, freq='W')
+    day_h = DailyHours(sample_col=pg_col[0], freq='D')
+    week_d = WeekDays(df, datetime_col=pg_col[0], long_lat_tuple=lat_long, freq='D')
     #train, test = ar_count(df, pg_col[0], pg_col[1])
-    # ivi_obj = IVI(pg_col[0], pg_col[1], 'D', 'W')
+    #ivi_obj = IVI(pg_col[0], pg_col[1], 'D', 'W')
     #
     vector_descriptor = [
-        daily_func(df, sample_field=pg_col[0], data_field=pg_col[1], func='count', freq='W'),
+        daily_func(df, sample_field=pg_col[0], data_field=pg_col[1], func='count', freq='D'),
         burst_func(df, sample_field=pg_col[0], data_field=pg_col[1], func='count', freq1='30S', freq2='W', filter_by_hours=False),
         day_h(df=df, data_col=pg_col[1], start_time='20:00:00', stop_time='08:00:00', func='count'),
         day_h(df=df, data_col=pg_col[1], start_time='08:00:00', stop_time='20:00:00', func='count'),

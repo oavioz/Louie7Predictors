@@ -10,7 +10,7 @@ return a numpy array of tuple(mean, std) for specific timeframe (day)
 func in  [count , nunique, f]
 '''
 def daily_func(df, sample_field, data_field, func, freq):
-    r0 = [float(0), float(0), float(0)]
+    r0 = [float(0), float(0), float(0), float(0)]
     if df.empty:
         return r0
     x = df.groupby(pd.Grouper(key=sample_field, freq=freq)).agg({data_field : [func]})
@@ -18,7 +18,7 @@ def daily_func(df, sample_field, data_field, func, freq):
     nz = y[y > 0]
     if len(nz) == 0:
         return r0
-    return [np.median(y), mad_calc(y), float(len(nz)/len(y))]
+    return [np.median(nz), mad_calc(nz), np.mean(nz), float(len(nz)/len(y))]
 
 
 
@@ -53,7 +53,7 @@ class DailyHours(object):
         return y + z
 
     def daily_stats_func(self, df, data_col, func, t_size=3):
-        r0 = [float(0), float(0), float(0), float(-1), float(-1)]
+        r0 = [float(0), float(0), float(0), float(0)] #, float(-1), float(-1)]
         if df.empty:
             return r0
         x = df.groupby(pd.Grouper(freq=self.freq)).agg({data_col: [func]})
@@ -61,16 +61,16 @@ class DailyHours(object):
         nz = y[y > 0]
         if not np.any(nz):
             return r0
-        train, test = y[0:len(y) - t_size], y[len(y) - t_size:]
-        ar_lag_1 = ar(train=train, test=test, lag=1, mse=True)
-        return [np.median(y), mad_calc(y), float(len(nz)/len(y)), calc_entropy(y), ar_lag_1]
+        #train, test = y[0:len(y) - t_size], y[len(y) - t_size:]
+        #ar_lag_1 = ar(train=train, test=test, lag=1, mse=True)
+        return [np.median(nz), mad_calc(nz), np.mean(nz), float(len(nz)/len(y))] #, calc_entropy(y), ar_lag_1]
 
     def cont_stats_func(self, df, data_col):
         if df.empty:
-            return [float(0), float(0)]
+            return [float(0), float(0), float(0)]
         ds = df.groupby(pd.Grouper(freq=self.freq)).apply(lambda x: x.pivot_table(index=[data_col], aggfunc='size'))
         np_list = ds.groupby(level=0).agg(np.mean).to_numpy()
-        return [np.median(np_list), mad_calc(np_list)]
+        return [np.median(np_list), mad_calc(np_list), np.mean(np_list)]
 
 
 class WeekDays(object):
@@ -91,13 +91,13 @@ class WeekDays(object):
         nz = y[y > 0]
         if len(nz) == 0:
             return r0
-        train, test = y[0:len(y) - t_size], y[len(y) - t_size:]
-        ar_lag_1 = ar(train=train, test=test, lag=1, mse=True)
-        return [np.median(y), mad_calc(y), float(len(nz)/len(y)), calc_entropy(y), ar_lag_1]
+        #train, test = y[0:len(y) - t_size], y[len(y) - t_size:]
+        #ar_lag_1 = ar(train=train, test=test, lag=1, mse=True)
+        return [np.median(nz), mad_calc(nz), np.mean(nz), float(len(nz)/len(y))] #, calc_entropy(y), ar_lag_1]
 
     # Mean and Std of continuous event (same event that happens one after the other)
     def cont_event(self, df, sample_field, data_field):
-        r0 = [float(0), float(0)]
+        r0 = [float(0), float(0), float(0)]
         if df.empty:
             return r0
         ds = df.groupby(pd.Grouper(key=sample_field, freq=self.freq)).apply(
@@ -106,7 +106,7 @@ class WeekDays(object):
         nz = y[y > 0]
         if len(nz) == 0:
             return r0
-        return [np.median(nz), mad_calc(nz)]
+        return [np.median(nz), mad_calc(nz), np.mean(nz)]
 
     def __call__(self, data_col, flag, func='count'):
         if flag == 'weekend':

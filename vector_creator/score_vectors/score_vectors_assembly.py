@@ -22,7 +22,7 @@ return :
 vector_len = {'call_logs' : len(vector_desc_call_logs),
               'photo_gallery' : len(vector_desc_photo_gallery),
               'install_apps' : len(vector_desc_installed_apps)}
-thd = {'call_logs' : 300, 'photo_gallery' : 200, 'install_apps' : 15, 'sample_days' : 30}
+thd = {'call_logs' : 300, 'photo_gallery' : 50, 'install_apps' : 10, 'sample_days' : 14}
 
 
 '''
@@ -35,7 +35,7 @@ def create_app_install_vector(uid, df_dict):
     key = uid + '_InstallApps'
     df = df_dict.get(key) if key in df_dict.keys() else pd.DataFrame({'empty': []})
     score_vec = [0] * vector_len['install_apps']
-    print('install_apps: ', len(df))
+    #print('install_apps: ', len(df))
     if not df.empty:
         df0 = df.sort_values('INSTALL_DATETIME')
         mask1 = len(df0) > thd['install_apps']
@@ -57,8 +57,9 @@ def create_image_gallery_vector(uid, df_dict, lat_long):
         if mask1:
             n_nan = df['IMAGE_TYPE'].isnull().sum()
             mask0 = float(n_nan / len(df)) < 0.5
-            #app_vector = create_app_install_vector(uid, df_dict)
+            app_vector = create_app_install_vector(uid, df_dict)
             score_vec = photo_gallery_vector_descriptor(df=df0,lat_long=lat_long) if mask0 else score_vec
+            score_vec += app_vector
     return len(df), pd.Series(score_vec, name=uid)
 
 
@@ -119,7 +120,7 @@ def score_vector_constructor(path, flag):
     if flag == 'call-logs':
         df0['description'] = vector_desc_call_logs
     else: # elif flag == 'others':
-        df0['description'] = vector_desc_photo_gallery #+ vector_desc_installed_apps
+        df0['description'] = vector_desc_photo_gallery + vector_desc_installed_apps
     dft = df0.set_index('description').transpose()
     print(dft.shape)
     return dft
