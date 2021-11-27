@@ -38,7 +38,13 @@ vector_desc_photo_gallery = [
     #'entropy on number of photos taken in weekdays',
     #'ar of num of photos in weekdays lag-1',
     'mean number of photos in burst at weekdays',
-    'mean number of bursts in weekdays'
+    'mean number of bursts in weekdays',
+    'ratio of night hours and daily mean number of photos',
+    'ratio of day hours and daily mean number of photos',
+    'ratio of night hours and day hours mean number of photos',
+    'ratio of weekend and week daily mean number of photos',
+    'ratio of week work days and week daily mean number of photos',
+    'ratio of weekend and week work days daily mean number of photos'
 ]
 vector_desc_call_logs = [
     'median daily calls',
