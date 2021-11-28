@@ -44,7 +44,9 @@ vector_desc_photo_gallery = [
     'ratio of night hours and day hours mean number of photos',
     'ratio of weekend and week daily mean number of photos',
     'ratio of week work days and week daily mean number of photos',
-    'ratio of weekend and week work days daily mean number of photos'
+    'ratio of weekend and week work days daily mean number of photos',
+    'ar of num of photos in day time lag-1',
+    'entropy on number of photos taken in day'
 ]
 vector_desc_call_logs = [
     'median daily calls',

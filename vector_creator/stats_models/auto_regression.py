@@ -18,9 +18,9 @@ def ar_dur(df, datetime_col, dur_col, t_size=3):
 def ar_count(df, datetime_col, num_col, t_size=3):
     y0 = df.groupby(pd.Grouper(key=datetime_col, freq='D')).agg({num_col: ['count']})
     y = y0[num_col].to_numpy().T[0]
-    nz = y[y > 0]
-    if not np.any(nz):
-        return [float(-1)]
+    #nz = y[y > 0]
+    #if not np.any(nz):
+    #   return [float(-1)]
     return y[0:len(y) - t_size], y[len(y) - t_size:]
 
 

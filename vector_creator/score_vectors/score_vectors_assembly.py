@@ -22,7 +22,7 @@ return :
 vector_len = {'call_logs' : len(vector_desc_call_logs),
               'photo_gallery' : len(vector_desc_photo_gallery),
               'install_apps' : len(vector_desc_installed_apps)}
-thd = {'call_logs' : 300, 'photo_gallery' : 50, 'install_apps' : 10, 'sample_days' : 14}
+thd = {'call_logs' : 300, 'photo_gallery' : 20, 'install_apps' : 10, 'sample_days' : 7}
 
 
 '''
@@ -47,19 +47,19 @@ def create_app_install_vector(uid, df_dict):
 def create_image_gallery_vector(uid, df_dict, lat_long):
     key = uid + '_ImgMetaData'
     df = df_dict.get(key) if key in df_dict.keys() else pd.DataFrame({'empty' : []})
-    score_vec = [0] * vector_len['photo_gallery'] #+ vector_len['install_apps'])
-    #print('photo-gallery: ', len(df))
+    score_vec = [0] * vector_len['photo_gallery']
+    app_vec = [0] * vector_len['install_apps']
     if not df.empty:
         df0 = df.sort_values('IMAGE_DATE_TIME')
         df0 = df0.reset_index(drop=True)
         days = np.abs(calc_number_of_days(df0, 'IMAGE_DATE_TIME'))
         mask1 = days >= thd['sample_days'] and len(df) >= thd['photo_gallery']
+        app_vec = create_app_install_vector(uid, df_dict)
         if mask1:
             n_nan = df['IMAGE_TYPE'].isnull().sum()
-            mask0 = float(n_nan / len(df)) < 0.5
-            app_vector = create_app_install_vector(uid, df_dict)
+            mask0 = float(n_nan / len(df)) < 0.95
             score_vec = photo_gallery_vector_descriptor(df=df0,lat_long=lat_long) if mask0 else score_vec
-            score_vec += app_vector
+    score_vec += app_vec
     return len(df), pd.Series(score_vec, name=uid)
 
 
@@ -86,7 +86,7 @@ def score_vector_for_init_metadata(uid, df_dict, lat_long):
 
 def run_score_vector(uid, raw_data, flag):
     #print(uid)
-    score_vector = [0] * vector_len['call_logs'] if flag == 'call_logs' else [0] * vector_len['photo_gallery'] # + vector_len['install_apps'])
+    score_vector = [0] * vector_len['call_logs'] if flag == 'call_logs' else [0] * (vector_len['photo_gallery'] + vector_len['install_apps'])
     l = 0
     loc_dict, uid_df_dict = create_df_from_init_metadata(uid=uid, raw_data_json=raw_data)
     if not 'empty' in uid_df_dict.keys():
@@ -95,11 +95,11 @@ def run_score_vector(uid, raw_data, flag):
             score_vector = score_vector_for_init_metadata(uid, uid_df_dict, loc_tuple)
         else: #elif flag == 'others':
             l, score_vector = create_image_gallery_vector(uid, uid_df_dict, loc_tuple)
-        s = '-> processed' if score_vector.any() else '-> data to small to process'
-        print(s + ' -> ' +  str(l))
+        #s = '-> processed' if score_vector.any() else '-> data to small to process'
+        #print('vector length' + ' -> ' +  str(l))
     else:
         score_vector = pd.Series(score_vector, name=uid)
-        print('-> json to small to process')
+        #print('-> json to small to process')
     return score_vector
 
 
@@ -114,8 +114,7 @@ def score_vector_constructor(path, flag):
             unique_id = file.split('_')[0]
             raw_data = json.load(codecs.open(path + file, 'r', 'utf-8-sig'))
             vscore = run_score_vector(uid=unique_id, raw_data=raw_data, flag=flag)
-            if vscore.any():
-                score_vector_dict[vscore.name] = vscore
+            score_vector_dict[vscore.name] = vscore
     df0 = pd.concat(score_vector_dict, axis=1)
     if flag == 'call-logs':
         df0['description'] = vector_desc_call_logs
@@ -136,8 +135,7 @@ def score_vector_from_bucket(object_storage_client, flag, start_str):
             raw_data = json.loads(obj.content)
             uid = f.name.split('_')[0]
             vscore = run_score_vector(uid=uid, raw_data=raw_data, flag=flag)
-            if vscore.any():
-                score_vector_dict[vscore.name] = vscore
+            score_vector_dict[vscore.name] = vscore
             counter = counter + 1
             if counter % 100 == 0:
                 print("counter : " + str(counter))
@@ -145,7 +143,7 @@ def score_vector_from_bucket(object_storage_client, flag, start_str):
     if flag == 'call-logs':
         df0['description'] = vector_desc_call_logs
     else: #elif flag == 'photo-gallery':
-        df0['description'] = vector_desc_photo_gallery #+ vector_desc_installed_apps
+        df0['description'] = vector_desc_photo_gallery + vector_desc_installed_apps
     dft = df0.set_index('description').transpose()
     print(dft.shape)
     return dft

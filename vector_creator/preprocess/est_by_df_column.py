@@ -83,7 +83,7 @@ class WeekDays(object):
         self.df2 = df2
 
     def weekdays_count_func(self, df, data_col, func, t_size=3):
-        r0 = [float(0), float(0), float(0), float(-1), float(-1)]
+        r0 = [float(0), float(0), float(0), float(0)]
         if df.empty:
             return r0
         x = df.groupby(pd.Grouper(key=self.datetime_col, freq=self.freq)).agg({data_col: [func]})

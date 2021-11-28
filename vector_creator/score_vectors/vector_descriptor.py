@@ -50,7 +50,7 @@ def photo_gallery_vector_descriptor(df, lat_long):
     #
     day_h = DailyHours(sample_col=pg_col[0], freq='D')
     week_d = WeekDays(df, datetime_col=pg_col[0], long_lat_tuple=lat_long, freq='D')
-    #train, test = ar_count(df, pg_col[0], pg_col[1])
+    train, test = ar_count(df, pg_col[0], pg_col[1])
     #ivi_obj = IVI(pg_col[0], pg_col[1], 'D', 'W')
     #
     day_hours = daily_func(df, sample_field=pg_col[0], data_field=pg_col[1], func='count', freq='D')
@@ -65,6 +65,9 @@ def photo_gallery_vector_descriptor(df, lat_long):
     mean_ratio_of_weekend_and_full_week = [float(week_ends[2] / day_hours[2]) if day_hours[2] > 0 else float(-1.0)]
     mean_ratio_of_work_days_and_full_week = [float(week_middays[2] / day_hours[2]) if day_hours[2] > 0 else float(-1.0)]
     mean_ratio_of_weekend_and_work_days = [float(week_ends[2] / week_middays[2]) if week_middays[2] > 0 else float(-1.0)]
+    ar_lag_1 = [ar(train=train, test=test, lag=1, mse=True)]
+    entropy_by_day = [entropy_of_count(df=df, freq_col=pg_col[0], data_col=pg_col[1])]
+
 
     vector_descriptor = [
         day_hours,
@@ -78,7 +81,9 @@ def photo_gallery_vector_descriptor(df, lat_long):
         mean_ratio_of_night_and_daytime,
         mean_ratio_of_weekend_and_full_week,
         mean_ratio_of_work_days_and_full_week,
-        mean_ratio_of_weekend_and_work_days
+        mean_ratio_of_weekend_and_work_days,
+        ar_lag_1,
+        entropy_by_day
     ]
     return list(chain.from_iterable(vector_descriptor))
 

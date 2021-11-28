@@ -17,10 +17,16 @@ def entropy_of_freq(df, freq_col, cat_col, cat):
     if cat != 'None':
         df = df.loc[df[cat_col] == cat]
     y = df.groupby('HOUR')['HOUR'].agg('count').to_numpy()
-    z = y[y > 0]
-    if len(z) == 0:
-        return [float(-1)]
-    return [est.calc_entropy(z)]
+    #z = y[y > 0]
+    #if len(z) == 0:
+    #    return [float(-1)]
+    return [est.calc_entropy(y)]
+
+
+def entropy_of_count(df, freq_col, data_col):
+    y0 = df.groupby(pd.Grouper(key=freq_col, freq='D')).agg({data_col: ['count']})
+    y = y0[data_col].to_numpy().T[0]
+    return est.calc_entropy(y)
 
 
 def entropy_of_number(df, num_col, cat_col, cat):
