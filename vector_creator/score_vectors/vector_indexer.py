@@ -45,6 +45,10 @@ vector_desc_photo_gallery = [
     'ratio of weekend and week daily mean number of photos',
     'ratio of week work days and week daily mean number of photos',
     'ratio of weekend and week work days daily mean number of photos',
+    'ratio of night hours and daily mean photos in burst',
+    'ratio of night hours and daily mean bursts a week',
+    'ratio of weekend and full week mean photos in burst',
+    'ratio of weekend and full week bursts a week',
     'ar of num of photos in day time lag-1',
     'entropy on number of photos taken in day'
 ]
