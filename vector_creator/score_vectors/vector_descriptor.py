@@ -53,23 +53,26 @@ def photo_gallery_vector_descriptor(df, lat_long):
     train, test = ar_count(df, pg_col[0], pg_col[1])
     #ivi_obj = IVI(pg_col[0], pg_col[1], 'D', 'W')
     #
-    day_hours = daily_func(df, sample_field=pg_col[0], data_field=pg_col[1], func='count', freq='D')
-    burst_in_week = burst_func(df, sample_field=pg_col[0], data_field=pg_col[1], func='count', freq1='30S', freq2='W', filter_by_hours=False)
-    nighttime_hours = day_h(df=df, data_col=pg_col[1], start_time='20:00:00', stop_time='08:00:00', func='count')
-    daytime_hours = day_h(df=df, data_col=pg_col[1], start_time='08:00:00', stop_time='20:00:00', func='count')
-    week_ends = week_d(data_col=pg_col[1], flag='weekend' , func='count')
-    week_days = week_d(data_col=pg_col[1], flag='workdays', func='count')
-    mean_ratio_of_night_and_full_day = [float(nighttime_hours[2] / day_hours[2]) if day_hours[2] > 0 else float(-1.0)]
-    mean_ratio_of_daytime_and_full_day = [float(daytime_hours[2] / day_hours[2]) if day_hours[2] > 0 else float(-1.0)]
-    mean_ratio_of_night_and_daytime = [float(nighttime_hours[2] / daytime_hours[2]) if daytime_hours[2] > 0 else float(-1.0)]
-    mean_ratio_of_weekend_and_full_week = [float(week_ends[2] / day_hours[2]) if day_hours[2] > 0 else float(-1.0)]
-    mean_ratio_of_work_days_and_full_week = [float(week_days[2] / day_hours[2]) if day_hours[2] > 0 else float(-1.0)]
-    mean_ratio_of_weekend_and_work_days = [float(week_ends[2] / week_days[2]) if week_days[2] > 0 else float(-1.0)]
-    mean_ratio_of_night_and_full_day_photos_in_burst = [float(nighttime_hours[4] / burst_in_week[0]) if burst_in_week[0] > 0 else float(-1.0)]
-    mean_ratio_of_night_and_full_day_bursts_in_week = [float(nighttime_hours[5] / burst_in_week[0]) if burst_in_week[0] > 0 else float(-1.0)]
-    mean_ratio_of_weekend_and_full_week_photos_in_burst = [float(week_ends[4] / burst_in_week[0]) if burst_in_week[0] > 0 else float(-1.0)]
-    mean_ratio_of_weekend_and_full_week_bursts_in_week = [float(week_ends[5] / burst_in_week[0]) if burst_in_week[0] > 0 else float(-1.0)]
+    day_hours, day_sum = daily_func(df, sample_field=pg_col[0], data_field=pg_col[1], func='count', freq='D')
+    burst_in_week, burst_day_sum = burst_func(df, sample_field=pg_col[0], data_field=pg_col[1], func='count', freq1='30S', freq2='W', filter_by_hours=False)
+    nighttime_hours, nt_sum, nt_burst_sum = day_h(df=df, data_col=pg_col[1], start_time='20:00:00', stop_time='08:00:00', func='count')
+    daytime_hours, dt_sum, dt_burst_sum = day_h(df=df, data_col=pg_col[1], start_time='08:00:00', stop_time='20:00:00', func='count')
+    week_ends, we_sum, we_burst_sum = week_d(data_col=pg_col[1], flag='weekend' , func='count')
+    week_days, wd_sum, wd_burst_sum = week_d(data_col=pg_col[1], flag='workdays', func='count')
+    #
+    mean_ratio_of_night_and_full_day = [float(nt_sum / day_sum) if day_sum > 0 else float(-1.0)]
+    mean_ratio_of_daytime_and_full_day = [float(dt_sum / day_sum) if day_sum > 0 else float(-1.0)]
+    mean_ratio_of_night_and_daytime = [float(nt_sum / dt_sum) if dt_sum > 0 else float(-1.0)]
+    mean_ratio_of_weekend_and_full_week = [float(we_sum / day_sum) if day_sum > 0 else float(-1.0)]
+    mean_ratio_of_work_days_and_full_week = [float(wd_sum / day_sum) if day_sum > 0 else float(-1.0)]
+    mean_ratio_of_weekend_and_work_days = [float(we_sum / wd_sum) if wd_sum > 0 else float(-1.0)]
+    mean_ratio_of_night_time_and_full_day_bursts_in_week = [float(nt_burst_sum / burst_day_sum) if burst_day_sum > 0 else float(-1.0)]
+    mean_ratio_of_day_time_and_full_day_bursts_in_week = [float(dt_burst_sum / burst_day_sum) if burst_day_sum > 0 else float(-1.0)]
+    mean_ratio_of_weekend_and_full_week_bursts_in_week = [float(we_burst_sum / burst_day_sum) if burst_day_sum > 0 else float(-1.0)]
+    mean_ratio_of_weekdays_and_full_week_bursts_in_week = [float(wd_burst_sum / burst_day_sum) if burst_day_sum > 0 else float(-1.0)]
+    #
     ar_lag_1 = [ar(train=train, test=test, lag=1, mse=True)]
+    ar_lag_3 = [ar(train=train, test=test, lag=3, mse=True)]
     entropy_by_day = [entropy_of_count(df=df, freq_col=pg_col[0], data_col=pg_col[1])]
 
 
@@ -86,11 +89,12 @@ def photo_gallery_vector_descriptor(df, lat_long):
         mean_ratio_of_weekend_and_full_week,
         mean_ratio_of_work_days_and_full_week,
         mean_ratio_of_weekend_and_work_days,
-        mean_ratio_of_night_and_full_day_photos_in_burst,
-        mean_ratio_of_night_and_full_day_bursts_in_week,
-        mean_ratio_of_weekend_and_full_week_photos_in_burst,
+        mean_ratio_of_night_time_and_full_day_bursts_in_week,
+        mean_ratio_of_day_time_and_full_day_bursts_in_week,
         mean_ratio_of_weekend_and_full_week_bursts_in_week,
+        mean_ratio_of_weekdays_and_full_week_bursts_in_week,
         ar_lag_1,
+        ar_lag_3,
         entropy_by_day
     ]
     return list(chain.from_iterable(vector_descriptor))
