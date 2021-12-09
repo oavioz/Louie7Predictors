@@ -54,7 +54,7 @@ class DailyHours(object):
         return y + z, ys, zs
 
     def daily_stats_func(self, df, data_col, func, t_size=3):
-        r0 = [float(0), float(0), float(0), float(0), float(0), float(-1)], float(0) #, float(-1), float(-1)]
+        r0 = [float(0), float(0), float(0), float(0), float(-1)], float(0) #, float(-1), float(-1)]
         if df.empty:
             return r0
         x = df.groupby(pd.Grouper(freq=self.freq)).agg({data_col: [func]})
