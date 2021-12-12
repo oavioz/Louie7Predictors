@@ -1,5 +1,4 @@
 from vector_creator.raw_to_df.rawdata_to_df import create_df_from_init_metadata
-from vector_creator.raw_to_df.load_oci_bucket import namespace, bucket_name
 from vector_creator.score_vectors.vector_descriptor import *
 from vector_creator.score_vectors.vector_indexer import *
 from vector_creator.preprocess.utils import calc_number_of_days
@@ -125,7 +124,7 @@ def score_vector_constructor(path, flag):
     return dft
 
 
-def score_vector_from_bucket(object_storage_client, flag, start_str):
+def score_vector_from_bucket(object_storage_client, flag, namespace, bucket_name, start_str):
     score_vector_dict = {}
     counter = 0
     object_list = object_storage_client.list_objects(namespace, bucket_name, start=start_str, fields='name, timeCreated, size')
