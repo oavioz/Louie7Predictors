@@ -8,6 +8,8 @@ import os
 import json
 import codecs
 import shutil
+import multiprocessing as mp
+from functools import partial
 
 
 '''
@@ -59,7 +61,7 @@ def create_image_gallery_vector(uid, df_dict, lat_long):
             mask0 = float(n_nan / len(df)) < 0.95
             score_vec = photo_gallery_vector_descriptor(df=df0,lat_long=lat_long) if mask0 else score_vec
     score_vec += app_vec
-    return len(df), pd.Series(score_vec, name=uid)
+    return pd.Series(score_vec, name=uid)
 
 
 def score_vector_for_init_metadata(uid, df_dict, lat_long):
@@ -83,22 +85,15 @@ def score_vector_for_init_metadata(uid, df_dict, lat_long):
 '''
 
 
-def run_score_vector(uid, raw_data, flag):
+def run_score_vector(uid, raw_data):
     #print(uid)
-    score_vector = [0] * vector_len['call_logs'] if flag == 'call_logs' else [0] * (vector_len['photo_gallery'] + vector_len['install_apps'])
-    l = 0
+    score_vector = [0] * (vector_len['photo_gallery'] + vector_len['install_apps'])
     loc_dict, uid_df_dict = create_df_from_init_metadata(uid=uid, raw_data_json=raw_data)
     if not 'empty' in uid_df_dict.keys():
         loc_tuple = (loc_dict[0]['Latitude'], loc_dict[0]['Longitude'])  # if loc_dict[0] and loc_dict[0]['Latitude'] and loc_dict[0]['Longitude'] else (-1.0, -1.0)
-        if flag == 'call-logs':
-            score_vector = score_vector_for_init_metadata(uid, uid_df_dict, loc_tuple)
-        else: #elif flag == 'others':
-            l, score_vector = create_image_gallery_vector(uid, uid_df_dict, loc_tuple)
-        #s = '-> processed' if score_vector.any() else '-> data to small to process'
-        #print('vector length' + ' -> ' +  str(l))
+        score_vector = create_image_gallery_vector(uid, uid_df_dict, loc_tuple)
     else:
         score_vector = pd.Series(score_vector, name=uid)
-        #print('-> json to small to process')
     return score_vector
 
 
@@ -106,43 +101,52 @@ def run_score_vector(uid, raw_data, flag):
     for each user calc unique_id, file_size, and score_vector 
 '''
 
-def score_vector_constructor(path, flag):
+
+def score_vector_creator(f, p):
+    unique_id = f.split('_')[0]
+    raw_data = json.load(codecs.open(p + f, 'r', 'utf-8-sig'))
+    return run_score_vector(uid=unique_id, raw_data=raw_data)
+
+
+def score_vector_constructor(path, procs):
     score_vector_dict = {}
-    for file in os.listdir(path):
-        if file.endswith('.json'):
-            unique_id = file.split('_')[0]
-            raw_data = json.load(codecs.open(path + file, 'r', 'utf-8-sig'))
-            vscore = run_score_vector(uid=unique_id, raw_data=raw_data, flag=flag)
-            score_vector_dict[vscore.name] = vscore
+    filter_list = list(filter(lambda x : x.endswith('.json'), os.listdir(path)))
+    pool = mp.Pool(processes=procs)
+    vector_creator = partial(score_vector_creator, p=path)
+    v_scores = pool.map(vector_creator, filter_list)
+    for v_score in v_scores:
+        score_vector_dict[v_score.name] = v_score
     df0 = pd.concat(score_vector_dict, axis=1)
-    if flag == 'call-logs':
-        df0['description'] = vector_desc_call_logs
-    else: # elif flag == 'others':
-        df0['description'] = vector_desc_photo_gallery + vector_desc_installed_apps
+    df0['description'] = vector_desc_photo_gallery + vector_desc_installed_apps
     dft = df0.set_index('description').transpose()
     print(dft.shape)
     return dft
 
 
-def score_vector_from_bucket(object_storage_client, flag, namespace, bucket_name, start_str):
+def score_vector_creator2(f, client_params):
+    object_storage_client = client_params[0]
+    namespace = client_params[1]
+    bucket_name = client_params[2]
+    if f.name.endswith('.json'):
+        obj = object_storage_client.get_object(namespace, bucket_name, f.name).data # accept: 'text/json'
+        raw_data = json.loads(obj.content)
+        uid = f.name.split('_')[0]
+        return run_score_vector(uid=uid, raw_data=raw_data)
+    else:
+        return pd.Series([], dtype=float)
+
+def score_vector_from_bucket(object_storage_client, namespace, bucket_name, start_str, procs):
     score_vector_dict = {}
-    counter = 0
     object_list = object_storage_client.list_objects(namespace, bucket_name, start=start_str, fields='name, timeCreated, size')
-    for f in object_list.data.objects:
-        if f.name.endswith('.json'):
-            obj = object_storage_client.get_object(namespace, bucket_name, f.name).data # accept: 'text/json'
-            raw_data = json.loads(obj.content)
-            uid = f.name.split('_')[0]
-            vscore = run_score_vector(uid=uid, raw_data=raw_data, flag=flag)
-            score_vector_dict[vscore.name] = vscore
-            counter = counter + 1
-            if counter % 100 == 0:
-                print("counter : " + str(counter))
+    pool = mp.Pool(processes=procs)
+    score_vec = partial(score_vector_creator2, client_params=(object_storage_client, namespace, bucket_name))
+    v_scores = pool.map(score_vec, object_list.data.objects)
+    ne_scores = list(filter(lambda x : not x.empty, v_scores))
+    for v_score in ne_scores:
+        score_vector_dict[v_score.name] = v_score
     df0 = pd.concat(score_vector_dict, axis=1)
-    if flag == 'call-logs':
-        df0['description'] = vector_desc_call_logs
-    else: #elif flag == 'photo-gallery':
-        df0['description'] = vector_desc_photo_gallery + vector_desc_installed_apps
+    df0['description'] = vector_desc_photo_gallery + vector_desc_installed_apps
     dft = df0.set_index('description').transpose()
     print(dft.shape)
     return dft
+
