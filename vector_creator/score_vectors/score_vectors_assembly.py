@@ -104,6 +104,7 @@ def run_score_vector(uid, raw_data):
 
 def score_vector_creator(f, p):
     unique_id = f.split('_')[0]
+    #print(mp.current_process())
     raw_data = json.load(codecs.open(p + f, 'r', 'utf-8-sig'))
     return run_score_vector(uid=unique_id, raw_data=raw_data)
 
@@ -123,24 +124,26 @@ def score_vector_constructor(path, procs):
     return dft
 
 
-def score_vector_creator2(f, client_params):
-    object_storage_client = client_params[0]
-    namespace = client_params[1]
-    bucket_name = client_params[2]
-    if f.name.endswith('.json'):
-        obj = object_storage_client.get_object(namespace, bucket_name, f.name).data # accept: 'text/json'
-        raw_data = json.loads(obj.content)
-        uid = f.name.split('_')[0]
-        return run_score_vector(uid=uid, raw_data=raw_data)
-    else:
-        return pd.Series([], dtype=float)
+def score_vector_creator2(raw_data):
+    uid = raw_data[0]
+    return run_score_vector(uid=uid, raw_data=raw_data[1])
 
-def score_vector_from_bucket(object_storage_client, namespace, bucket_name, start_str, procs):
+
+def create_json_obj_list(object_storage_client, namespace, bucket_name, start_ptr):
+    object_list = object_storage_client.list_objects(namespace, bucket_name, start=start_ptr,fields='name, timeCreated, size')
+    json_list = []
+    for obj in object_list.data.objects:
+        if obj.name.endswith('.json'):
+            uid = obj.name.split('_')[0]
+            obj_data = object_storage_client.get_object(namespace, bucket_name, obj.name).data
+            json_list.append((uid, json.loads(obj_data.content)))
+    return json_list
+
+
+def score_vector_from_bucket(raw_obj_list, procs):
     score_vector_dict = {}
-    object_list = object_storage_client.list_objects(namespace, bucket_name, start=start_str, fields='name, timeCreated, size')
     pool = mp.Pool(processes=procs)
-    score_vec = partial(score_vector_creator2, client_params=(object_storage_client, namespace, bucket_name))
-    v_scores = pool.map(score_vec, object_list.data.objects)
+    v_scores = pool.map(score_vector_creator2, raw_obj_list)
     ne_scores = list(filter(lambda x : not x.empty, v_scores))
     for v_score in ne_scores:
         score_vector_dict[v_score.name] = v_score
